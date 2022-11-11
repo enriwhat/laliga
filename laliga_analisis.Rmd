@@ -11,5 +11,113 @@ test <- filter(combined_data_laliga,year==2020)
 train <- filter(combined_data_laliga,year<2020)
 write.csv(test,"test_laliga.csv")
 write.csv(train,"train_laliga.csv")
-
 ```
+
+
+
+
+```{r}
+
+train_laliga$Score <- NULL
+train_laliga$`Half Time Score` <- NULL
+train_laliga$`Match Excitement`<- NULL
+train_laliga$`Home Team Rating` <- NULL
+train_laliga$`Away Team Rating`<- NULL
+train_laliga$`Home Team Throw Ins` <- NULL
+train_laliga$`Away Team Throw Ins` <- NULL
+head(train_laliga)
+```
+```{r}
+#Porcentaje medio de posesión por equipo en casa
+tapply(train_laliga$`Home Team Possession %`,train_laliga$`Home Team`,mean)
+```
+```{r}
+#Porcentaje medio de posesión por equipo fuera de casa
+tapply(train_laliga$`Away Team Possession %`, train_laliga$`Away Team`, mean)
+```
+```{r}
+#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
+names(train_laliga)<- gsub(" ","_", names(train_laliga))
+```
+
+
+```{r}
+aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train_laliga, FUN = mean) -> goles_home_team
+goles_home_team
+```
+```{r}
+aggregate(Away_Team_Goals_Scored ~Away_Team, data = train_laliga, FUN = mean) -> goles_Away_team
+goles_Away_team
+```
+
+
+```{r}
+subset(train_laliga, Home_Team_Goals_Scored > Away_Team_Goals_Scored,  ) -> Victorias_casa
+Victorias_casa
+subset(train_laliga, Home_Team_Goals_Scored == Away_Team_Goals_Scored,) -> Empates
+Empates
+subset(train_laliga, Home_Team_Goals_Scored < Away_Team_Goals_Scored) -> Derrotas_casa
+Derrotas_casa
+```
+```{r}
+boxplot(Empates$`Home_Team_Possession_%`)
+boxplot(Victorias_casa$`Home_Team_Possession_%`)
+boxplot(Derrotas_casa$`Home_Team_Possession_%`)
+```
+```{r}
+summary(Empates$`Home_Team_Possession_%`)
+summary(Victorias_casa$`Home_Team_Possession_%`)
+summary(Derrotas_casa$`Home_Team_Possession_%`)
+#Con estos datos tan similares sacamos en conclusión que la posesión no ha influido mucho en las victorias(pobre Pep)
+```
+```{r}
+filter(Victorias_casa, Home_Team_Red_Cards > Away_Team_Red_Cards) 
+```
+```{r}
+#Porcentaje de victorias caseras(TRUE)
+prop.table(table(train_laliga$Home_Team_Goals_Scored > train_laliga$Away_Team_Goals_Scored))
+#Porcentaje de empates
+prop.table(table(train_laliga$Home_Team_Goals_Scored == train_laliga$Away_Team_Goals_Scored))
+#Porcentaje de derrotas caseras
+prop.table(table(train_laliga$Home_Team_Goals_Scored < train_laliga$Away_Team_Goals_Scored))
+```
+
+
+```{r}
+prop.table(table(Victorias_casa$Home_Team_Total_Shots > Victorias_casa$Away_Team_Total_Shots))
+#En un 30% de las victorias de casa el equipo de casa tiró menos tiros que el de fuera
+```
+```{r}
+prop.table(table(Victorias_casa$Home_Team_Blocked_Shots <= Victorias_casa$Away_Team_Blocked_Shots))
+#Los tiros bloqueados no influyen mucho en el resultado del partido
+prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team_Blocked_Shots))
+#En las derrotas si vemos que el 43% de las veces bloquearon menos 
+```
+```{r}
+summary(Derrotas_casa)
+```
+```{r}
+summary(Victorias_casa)
+```
+```{r}
+summary(Empates)
+```
+```{r}
+#Media de goles por partido
+sum(train_laliga$Home_Team_Goals_Scored, train_laliga$Away_Team_Goals_Scored)/nrow(train_laliga)
+```   
+```{r}
+#Media de goles por partido con victoria local
+sum(Victorias_casa$Home_Team_Goals_Scored,Victorias_casa$Away_Team_Goals_Scored)/nrow(Victorias_casa)
+```
+
+
+```{r}
+#Media de goles por partido con victoria visitante
+sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/nrow(Derrotas_casa)
+```
+```{r}
+#Media de goles por partido con empate
+sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
+```
+
