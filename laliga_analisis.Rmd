@@ -5,16 +5,12 @@ date: "2022-10-22"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r}
 library(dplyr)
 test <- filter(combined_data_laliga,year==2020)
 train <- filter(combined_data_laliga,year<2020)
 write.csv(test,"test_laliga.csv")
 write.csv(train,"train_laliga.csv")
-<<<<<<< HEAD
-=======
-grgtdfgdfgfdgdfg
->>>>>>> a6cf8d91013d1c387ca6a91ff377deca0f3a3cc8
 ```
 
 
@@ -31,14 +27,17 @@ train_laliga$`Home Team Throw Ins` <- NULL
 train_laliga$`Away Team Throw Ins` <- NULL
 head(train_laliga)
 ```
+
 ```{r}
 #Porcentaje medio de posesión por equipo en casa
 tapply(train_laliga$`Home Team Possession %`,train_laliga$`Home Team`,mean)
 ```
+
 ```{r}
 #Porcentaje medio de posesión por equipo fuera de casa
 tapply(train_laliga$`Away Team Possession %`, train_laliga$`Away Team`, mean)
 ```
+
 ```{r}
 #Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
 names(train_laliga)<- gsub(" ","_", names(train_laliga))
@@ -49,6 +48,7 @@ names(train_laliga)<- gsub(" ","_", names(train_laliga))
 aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train_laliga, FUN = mean) -> goles_home_team
 goles_home_team
 ```
+
 ```{r}
 aggregate(Away_Team_Goals_Scored ~Away_Team, data = train_laliga, FUN = mean) -> goles_Away_team
 goles_Away_team
@@ -63,25 +63,34 @@ Empates
 subset(train_laliga, Home_Team_Goals_Scored < Away_Team_Goals_Scored) -> Derrotas_casa
 Derrotas_casa
 ```
+
 ```{r}
 boxplot(Empates$`Home_Team_Possession_%`)
 boxplot(Victorias_casa$`Home_Team_Possession_%`)
 boxplot(Derrotas_casa$`Home_Team_Possession_%`)
 ```
+
 ```{r}
 summary(Empates$`Home_Team_Possession_%`)
 summary(Victorias_casa$`Home_Team_Possession_%`)
 summary(Derrotas_casa$`Home_Team_Possession_%`)
 #Con estos datos tan similares sacamos en conclusión que la posesión no ha influido mucho en las victorias(pobre Pep)
 ```
+
 ```{r}
 filter(Victorias_casa, Home_Team_Red_Cards > Away_Team_Red_Cards) 
 ```
+
 ```{r}
 #Porcentaje de victorias caseras(TRUE)
 prop.table(table(train_laliga$Home_Team_Goals_Scored > train_laliga$Away_Team_Goals_Scored))
+```
+```{r}
 #Porcentaje de empates
 prop.table(table(train_laliga$Home_Team_Goals_Scored == train_laliga$Away_Team_Goals_Scored))
+```
+
+```{r}
 #Porcentaje de derrotas caseras
 prop.table(table(train_laliga$Home_Team_Goals_Scored < train_laliga$Away_Team_Goals_Scored))
 ```
@@ -120,11 +129,12 @@ sum(Victorias_casa$Home_Team_Goals_Scored,Victorias_casa$Away_Team_Goals_Scored)
 #Media de goles por partido con victoria visitante
 sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/nrow(Derrotas_casa)
 ```
+
 ```{r}
 #Media de goles por partido con empate
 sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
 ```
-```{r}
-sadasfdadfdfsdsadasd
-```
+
+
+
 
