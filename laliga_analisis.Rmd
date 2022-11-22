@@ -11,6 +11,10 @@ test <- filter(combined_data_laliga,year==2020)
 train <- filter(combined_data_laliga,year<2020)
 write.csv(test,"test_laliga.csv")
 write.csv(train,"train_laliga.csv")
+<<<<<<< HEAD
+=======
+grgtdfgdfgfdgdfg
+>>>>>>> a6cf8d91013d1c387ca6a91ff377deca0f3a3cc8
 ```
 
 
