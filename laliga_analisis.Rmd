@@ -120,4 +120,7 @@ sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/n
 #Media de goles por partido con empate
 sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
 ```
+```{r}
+sadasfdadfdfs
+```
 
