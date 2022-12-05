@@ -6,13 +6,44 @@ output: html_document
 ---
 
 ```{r}
+# Librerías
 library(dplyr)
-test <- filter(combined_data_laliga,year==2020)
-train <- filter(combined_data_laliga,year<2020)
-write.csv(test,"test_laliga.csv")
-write.csv(train,"train_laliga.csv")
+library(readr)
 ```
 
+```{r}
+# Dividimos los datos en dos datasets (train y test)
+test <- filter(combined_data_laliga,year==2020)
+train <- filter(combined_data_laliga,year<2020)
+write.csv(test,"test/test_laliga.csv")
+write.csv(train,"train/train_laliga.csv")
+train <- read.csv("train/train_laliga.csv")
+test <- read.csv("test/test_laliga.csv")
+```
+
+```{r}
+# primeros estadisticos de clase
+
+str(train)
+summary(train) #medias y medianas son bastante similares, asi que se pueden analizar como normales
+
+train$Home.Team <- as.factor(train$Home.Team) #convertirlo a categorias
+train$Away.Team <- as.factor(train$Away.Team)
+
+train$Score <- NULL
+train$Half.Time.Score <- NULL
+train$Match.Excitement <- NULL
+train$Home.Team.Rating <- NULL
+train$Away.Team.Rating <- NULL
+
+table(train$Home.Team)
+prop.table(table(train$Home.Team))
+
+table(train$Home.Team,train$Away.Team)
+
+hist(train$Home.Team.Goals.Scored,breaks=4)
+hist(train$Away.Team.Goals.Scored,breaks=4)
+```
 
 
 
