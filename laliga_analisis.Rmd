@@ -9,91 +9,188 @@ output: html_document
 # Librerías
 library(dplyr)
 library(readr)
+library(ggplot2)
+library(cowplot)
+```
+
+```{r}
+laliga <- read_csv("combined_data_laliga.csv")
+```
+
+**Home Team**: Equipo local\
+**Away Team**: Equipo visitante\
+**Score**: Resultado\
+**Half Time Score**: Resultado al descanso\
+**Match Excitement**: Emoción del partido (subjetiva)\
+**Home Team Rating**: Nota del local\
+**Away Team Rating**: Nota del visitante\
+**Home Team Possession**: Posesión local\
+**Away Team Possession**: Posesión visitante\
+**Home Team off Target Shots**: Tiros fuera local\
+**Home Team on Target Shots**: Tiros a puerta local\
+**Home Team Total Shots**: Total tiros local\
+**Home Team Blocked Shots**: Tiros bloqueados local\
+**Home Team Corners**: Corners local\
+**Home Team Throw Ins**: Centros local\
+**Home Team Pass Success**: Pases exitosos local\
+**Home Team Aerials Won**: Balones aereos ganados local\
+**Home Team Clearences**: Despejes local\
+**Home Team Fouls**: Faltas local\
+**Home Team Yellow Cards**: Amarillas local\
+**Home Team Second Yellow Cards**: Segundas amarillas local\
+**Home Team Red Cards**: Rojas local\
+**Away Team off Target Shots**: Tiros fuera visitante\
+**Away Team on Target Shots**: Tiros a puerta visitante\
+**Away Team Total Shots**: Total tiros visitante\
+**Away Team Blocked Shots**: Tiros bloqueados visitante\
+**Away Team Corners**: Corners visitante\
+**Away Team Throw Ins**: Centros visitante\
+**Away Team Pass Success**: Pases exitosos visitante\
+**Away Team Aerials Won**: Balones aereos ganados visitante\
+**Away Team Clearences**: Despejes visitante\
+**Away Team Fouls**: Faltas visitante\
+**Away Team Yellow Cards**: Amarillas visitante\
+**Away Team Second Yellow Cards**: Segundas amarillas visitante\
+**Away Team Red Cards**: Rojas visitante\
+**Home Team Goals Scored**: Goles local\
+**Away Team Goals Scored**: Goles visitante\
+**Home Team Goals Conceeded**: Goles visitante\
+**Away Team Goals Conceeded**: Goles local\
+**Year**: Año\
+
+```{r}
+#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
+names(laliga)<- gsub(" ","_", names(laliga))
+```
+
+```{r}
+laliga$Score <-  NULL
+laliga$`Half_Time_Score` <- NULL
+laliga$`Match_Excitement` <- NULL
+laliga$`Home_Team_Rating` <- NULL
+laliga$`Away_Team_Rating` <- NULL
+laliga$`Home_Team_Goals_Conceeded` <- NULL
+laliga$`Away_Team_Goals_Conceeded` <- NULL
+```
+
+```{r}
+# Añadimos la columna resultado (tipo quiniela)
+laliga <- mutate(laliga, resultado = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, 'Local',
+                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, 'Visitante', 'Empate')))
+```
+
+```{r}
+# Convertimos a categorias
+laliga$Home_Team <- as.factor(laliga$Home_Team)
+laliga$Away_Team <- as.factor(laliga$Away_Team)
+laliga$resultado <- as.factor(laliga$resultado)
 ```
 
 ```{r}
 # Dividimos los datos en dos datasets (train y test)
-test <- filter(combined_data_laliga,year==2020)
-train <- filter(combined_data_laliga,year<2020)
-write.csv(test,"test/test_laliga.csv")
-write.csv(train,"train/train_laliga.csv")
-train <- read.csv("train/train_laliga.csv")
-test <- read.csv("test/test_laliga.csv")
+test <- filter(laliga, year==2020)
+train <- filter(laliga, year<2020)
+#write.csv(test,"test/test_laliga.csv")
+#write.csv(train,"train/train_laliga.csv")
 ```
+
+---------------EMPEZAMOS EL ANALISIS-----------------
+
 
 ```{r}
 # primeros estadisticos de clase
-
 str(train)
 summary(train) #medias y medianas son bastante similares, asi que se pueden analizar como normales
 
-train$Home.Team <- as.factor(train$Home.Team) #convertirlo a categorias
-train$Away.Team <- as.factor(train$Away.Team)
 
-train$Score <- NULL
-train$Half.Time.Score <- NULL
-train$Match.Excitement <- NULL
-train$Home.Team.Rating <- NULL
-train$Away.Team.Rating <- NULL
+table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugado (más años en primera division)
+prop.table(table(train$Home_Team))
 
-table(train$Home.Team)
-prop.table(table(train$Home.Team))
+table(train$Home_Team, train$Away_Team)
 
-table(train$Home.Team,train$Away.Team)
+hist(train$Home_Team_Goals_Scored,breaks=15)
+hist(train$Away_Team_Goals_Scored,breaks=15) # fuera se meten menos goles
+```
 
-hist(train$Home.Team.Goals.Scored,breaks=4)
-hist(train$Away.Team.Goals.Scored,breaks=4)
+```{r}
+pairs(train %>%
+        select(Home_Team_Goals_Scored, `Home_Team_Possession_%`, Home_Team_Total_Shots, Home_Team_Corners, Home_Team_Fouls, Home_Team_Aerials_Won, `Home_Team_Pass_Success_%`, Home_Team_Throw_Ins), pch = 21, bg = "black", col = "red")
+```
+
+```{r}
+ggplot(train,aes(resultado ,Home_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="resultados", x="victoria", y="goles local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
+```
+
+```{r}
+ggplot(train,aes(resultado ,Away_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="resultados", x="victoria", y="goles visitante") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
 ```
 
 
 
 ```{r}
+ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="resultados", x="victoria", y="tiros a puerta local") +
+  theme(plot.title=element_text(hjust = 0.5))
 
-train_laliga$Score <- NULL
-train_laliga$`Half Time Score` <- NULL
-train_laliga$`Match Excitement`<- NULL
-train_laliga$`Home Team Rating` <- NULL
-train_laliga$`Away Team Rating`<- NULL
-train_laliga$`Home Team Throw Ins` <- NULL
-train_laliga$`Away Team Throw Ins` <- NULL
-head(train_laliga)
+# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
 ```
+
+
+
+
+
+
+
+
+```{r}
+Victorias_casa <- train %>% filter(resultado==1)
+Victorias_casa
+Derrotas_casa <- train %>% filter(resultado==2)
+Derrotas_casa
+Empates <- train %>% filter(resultado==0)
+Empates
+```
+
+
+
 
 ```{r}
 #Porcentaje medio de posesión por equipo en casa
-tapply(train_laliga$`Home Team Possession %`,train_laliga$`Home Team`,mean)
+tapply(train$`Home_Team_Possession_%`,train$`Home_Team`,mean)
 ```
 
 ```{r}
 #Porcentaje medio de posesión por equipo fuera de casa
-tapply(train_laliga$`Away Team Possession %`, train_laliga$`Away Team`, mean)
-```
-
-```{r}
-#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
-names(train_laliga)<- gsub(" ","_", names(train_laliga))
+tapply(train$`Away_Team_Possession_%`,train$`Away_Team`,mean)
 ```
 
 
+
 ```{r}
-aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train_laliga, FUN = mean) -> goles_home_team
+aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train, FUN = mean) -> goles_home_team
 goles_home_team
 ```
 
 ```{r}
-aggregate(Away_Team_Goals_Scored ~Away_Team, data = train_laliga, FUN = mean) -> goles_Away_team
+aggregate(Away_Team_Goals_Scored ~ Away_Team, data = train, FUN = mean) -> goles_Away_team
 goles_Away_team
 ```
 
 
-```{r}
-subset(train_laliga, Home_Team_Goals_Scored > Away_Team_Goals_Scored,  ) -> Victorias_casa
-Victorias_casa
-subset(train_laliga, Home_Team_Goals_Scored == Away_Team_Goals_Scored,) -> Empates
-Empates
-subset(train_laliga, Home_Team_Goals_Scored < Away_Team_Goals_Scored) -> Derrotas_casa
-Derrotas_casa
-```
 
 ```{r}
 boxplot(Empates$`Home_Team_Possession_%`)
@@ -114,47 +211,52 @@ filter(Victorias_casa, Home_Team_Red_Cards > Away_Team_Red_Cards)
 
 ```{r}
 #Porcentaje de victorias caseras(TRUE)
-prop.table(table(train_laliga$Home_Team_Goals_Scored > train_laliga$Away_Team_Goals_Scored))
+prop.table(table(train$Home_Team_Goals_Scored > train$Away_Team_Goals_Scored))
 ```
+
 ```{r}
 #Porcentaje de empates
-prop.table(table(train_laliga$Home_Team_Goals_Scored == train_laliga$Away_Team_Goals_Scored))
+prop.table(table(train$Home_Team_Goals_Scored == train$Away_Team_Goals_Scored))
 ```
 
 ```{r}
 #Porcentaje de derrotas caseras
-prop.table(table(train_laliga$Home_Team_Goals_Scored < train_laliga$Away_Team_Goals_Scored))
+prop.table(table(train$Home_Team_Goals_Scored < train$Away_Team_Goals_Scored))
 ```
-
 
 ```{r}
 prop.table(table(Victorias_casa$Home_Team_Total_Shots > Victorias_casa$Away_Team_Total_Shots))
 #En un 30% de las victorias de casa el equipo de casa tiró menos tiros que el de fuera
 ```
+
 ```{r}
 prop.table(table(Victorias_casa$Home_Team_Blocked_Shots <= Victorias_casa$Away_Team_Blocked_Shots))
 #Los tiros bloqueados no influyen mucho en el resultado del partido
 prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team_Blocked_Shots))
 #En las derrotas si vemos que el 43% de las veces bloquearon menos 
 ```
+
 ```{r}
 summary(Derrotas_casa)
 ```
+
 ```{r}
 summary(Victorias_casa)
 ```
+
 ```{r}
 summary(Empates)
 ```
+
 ```{r}
 #Media de goles por partido
-sum(train_laliga$Home_Team_Goals_Scored, train_laliga$Away_Team_Goals_Scored)/nrow(train_laliga)
-```   
+sum(train$Home_Team_Goals_Scored, train$Away_Team_Goals_Scored)/nrow(train)
+```
+
 ```{r}
 #Media de goles por partido con victoria local
 sum(Victorias_casa$Home_Team_Goals_Scored,Victorias_casa$Away_Team_Goals_Scored)/nrow(Victorias_casa)
 ```
-
 
 ```{r}
 #Media de goles por partido con victoria visitante
@@ -165,7 +267,3 @@ sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/n
 #Media de goles por partido con empate
 sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
 ```
-
-
-
-
