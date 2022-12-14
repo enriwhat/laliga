@@ -13,6 +13,13 @@ library(ggplot2)
 library(cowplot)
 ```
 
+## DEFINICIÓN DE OBJETIVOS
+- ¿Qué hace que un equipo gane más partidos?
+- ¿Qué variables influyen en las victorias?
+
+
+## ANÁLISIS EXPLORATORIO INICIAL
+
 ```{r}
 laliga <- read_csv("combined_data_laliga.csv")
 ```
@@ -64,6 +71,13 @@ names(laliga)<- gsub(" ","_", names(laliga))
 ```
 
 ```{r}
+# primeros estadisticos de clase
+str(laliga)
+summary(laliga) #medias y medianas son bastante similares, asi que se pueden analizar como normales
+```
+
+```{r}
+# Limpieza de variables que no nos interesan
 laliga$Score <-  NULL
 laliga$`Half_Time_Score` <- NULL
 laliga$`Match_Excitement` <- NULL
@@ -75,8 +89,11 @@ laliga$`Away_Team_Goals_Conceeded` <- NULL
 
 ```{r}
 # Añadimos la columna resultado (tipo quiniela)
-laliga <- mutate(laliga, resultado = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, 'Local',
-                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, 'Visitante', 'Empate')))
+laliga <- mutate(laliga, resultado = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, 1,
+                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, 2, "x")))
+
+# Añadimos la columna con los goles totales (por partido)
+laliga <- mutate(laliga, goles = Home_Team_Goals_Scored+Away_Team_Goals_Scored)
 ```
 
 ```{r}
@@ -94,27 +111,27 @@ train <- filter(laliga, year<2020)
 #write.csv(train,"train/train_laliga.csv")
 ```
 
----------------EMPEZAMOS EL ANALISIS-----------------
-
+## ANÁLISIS
 
 ```{r}
-# primeros estadisticos de clase
-str(train)
-summary(train) #medias y medianas son bastante similares, asi que se pueden analizar como normales
-
-
 table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugado (más años en primera division)
 prop.table(table(train$Home_Team))
 
 table(train$Home_Team, train$Away_Team)
-
-hist(train$Home_Team_Goals_Scored,breaks=15)
-hist(train$Away_Team_Goals_Scored,breaks=15) # fuera se meten menos goles
 ```
 
 ```{r}
-pairs(train %>%
-        select(Home_Team_Goals_Scored, `Home_Team_Possession_%`, Home_Team_Total_Shots, Home_Team_Corners, Home_Team_Fouls, Home_Team_Aerials_Won, `Home_Team_Pass_Success_%`, Home_Team_Throw_Ins), pch = 21, bg = "black", col = "red")
+ggplot(train,aes(x=resultado)) + geom_bar() # se ve que jugar en casa es un factor importante para ganar
+```
+
+```{r}
+ggplot(train,aes(resultado ,goles)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="resultados", x="victoria", y="goles local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# en los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate)
 ```
 
 ```{r}
@@ -146,14 +163,40 @@ ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
   labs(title="resultados", x="victoria", y="tiros a puerta local") +
   theme(plot.title=element_text(hjust = 0.5))
 
-# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
+# Cuando el equipo local gana, mayor es el numero de tiros a puerta.
 ```
 
 
+```{r}
+ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="local", x="equipos", y="goles por partido") +
+  theme(plot.title=element_text(hjust = 0.5))
 
+# media de goles por partido de cada equipo en su casa
+```
 
+```{r}
+ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="visitante", x="equipo", y="goles por partido") +
+  theme(plot.title=element_text(hjust = 0.5))
 
+# media de goles por partido de cada equipo de visitante
+```
 
+```{r}
+# Correlación de algunas variables (no parece haber mucha)
+pairs(train %>%
+        select(Home_Team_Goals_Scored, `Home_Team_Possession_%`, Home_Team_Total_Shots, Home_Team_Corners, Home_Team_Fouls, Home_Team_Aerials_Won, `Home_Team_Pass_Success_%`, Home_Team_Throw_Ins), pch = 21, bg = "black", col = "red")
+```
+
+```{r}
+hist(train$Home_Team_Goals_Scored,breaks=15)
+hist(train$Away_Team_Goals_Scored,breaks=15) # fuera se meten menos goles
+```
 
 
 ```{r}
