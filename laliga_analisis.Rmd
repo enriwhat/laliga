@@ -172,7 +172,7 @@ ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'lightgreen') +
   labs(title="local", x="equipos", y="goles por partido") +
-  theme(plot.title=element_text(hjust = 0.5))
+  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
 
 # media de goles por partido de cada equipo en su casa
 ```
@@ -182,7 +182,7 @@ ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'lightgreen') +
   labs(title="visitante", x="equipo", y="goles por partido") +
-  theme(plot.title=element_text(hjust = 0.5))
+  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
 
 # media de goles por partido de cada equipo de visitante
 ```
@@ -204,7 +204,7 @@ Victorias_casa <- train %>% filter(resultado==1)
 Victorias_casa
 Derrotas_casa <- train %>% filter(resultado==2)
 Derrotas_casa
-Empates <- train %>% filter(resultado==0)
+Empates <- train %>% filter(resultado=="x")
 Empates
 ```
 
