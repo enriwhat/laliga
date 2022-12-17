@@ -5,7 +5,7 @@ date: "2022-10-22"
 output: html_document
 ---
 
-```{r}
+```{r include=FALSE}
 # Librerías
 library(dplyr)
 library(readr)
@@ -13,16 +13,25 @@ library(ggplot2)
 library(cowplot)
 ```
 
-## DEFINICIÓN DE OBJETIVOS
-- ¿Qué hace que un equipo gane más partidos?
-- ¿Qué variables influyen en las victorias?
-
-
 ## ANÁLISIS EXPLORATORIO INICIAL
 
-```{r}
+```{r include=FALSE}
 laliga <- read_csv("combined_data_laliga.csv")
 ```
+
+```{r}
+# primeros estadisticos de clase
+str(laliga)
+```
+
+```{r}
+summary(laliga) #medias y medianas son bastante similares, asi que se pueden analizar como normales
+```
+
+El dataframe contiene todos los partidos de la liga española de 7 temporadas (de 2014 a 2020).\
+
+-   2660 observaciones (partidos)
+-   41 variables
 
 **Home Team**: Equipo local\
 **Away Team**: Equipo visitante\
@@ -65,15 +74,12 @@ laliga <- read_csv("combined_data_laliga.csv")
 **Away Team Goals Conceeded**: Goles local\
 **Year**: Año\
 
-```{r}
-#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
-names(laliga)<- gsub(" ","_", names(laliga))
-```
+
+## LIMPIEZA DE DATOS
 
 ```{r}
-# primeros estadisticos de clase
-str(laliga)
-summary(laliga) #medias y medianas son bastante similares, asi que se pueden analizar como normales
+#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
+names(laliga) <- gsub(" ","_", names(laliga))
 ```
 
 ```{r}
@@ -89,8 +95,8 @@ laliga$`Away_Team_Goals_Conceeded` <- NULL
 
 ```{r}
 # Añadimos la columna resultado (tipo quiniela)
-laliga <- mutate(laliga, resultado = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, 1,
-                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, 2, "x")))
+laliga <- mutate(laliga, resultado = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, "1",
+                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, "2", "x")))
 
 # Añadimos la columna con los goles totales (por partido)
 laliga <- mutate(laliga, goles = Home_Team_Goals_Scored+Away_Team_Goals_Scored)
@@ -103,6 +109,14 @@ laliga$Away_Team <- as.factor(laliga$Away_Team)
 laliga$resultado <- as.factor(laliga$resultado)
 ```
 
+
+## DEFINICIÓN DE OBJETIVOS
+
+-   ¿Qué hace que un equipo gane un partido?
+-   ¿Qué variables influyen en las victorias?
+-   Predecir el ganador de un partido
+
+
 ```{r}
 # Dividimos los datos en dos datasets (train y test)
 test <- filter(laliga, year==2020)
@@ -111,145 +125,26 @@ train <- filter(laliga, year<2020)
 #write.csv(train,"train/train_laliga.csv")
 ```
 
+```{r include=FALSE}
+# dataframes separados por resultado
+Victorias_casa <- train %>% filter(resultado==1)
+Derrotas_casa <- train %>% filter(resultado==2)
+Empates <- train %>% filter(resultado=="x")
+```
+
 ## ANÁLISIS
 
 ```{r}
 table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugado (más años en primera division)
-prop.table(table(train$Home_Team))
 
-table(train$Home_Team, train$Away_Team)
+#prop.table(table(train$Home_Team))
+#table(train$Home_Team, train$Away_Team)
 ```
+10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
 
 ```{r}
-ggplot(train,aes(x=resultado)) + geom_bar() # se ve que jugar en casa es un factor importante para ganar
-```
-
-```{r}
-ggplot(train,aes(resultado ,goles)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="resultados", x="victoria", y="goles local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# en los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate)
-```
-
-```{r}
-ggplot(train,aes(resultado ,Home_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="resultados", x="victoria", y="goles local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
-```
-
-```{r}
-ggplot(train,aes(resultado ,Away_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="resultados", x="victoria", y="goles visitante") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
-```
-
-
-
-```{r}
-ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="resultados", x="victoria", y="tiros a puerta local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Cuando el equipo local gana, mayor es el numero de tiros a puerta.
-```
-
-
-```{r}
-ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="local", x="equipos", y="goles por partido") +
-  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
-
-# media de goles por partido de cada equipo en su casa
-```
-
-```{r}
-ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="visitante", x="equipo", y="goles por partido") +
-  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
-
-# media de goles por partido de cada equipo de visitante
-```
-
-```{r}
-# Correlación de algunas variables (no parece haber mucha)
-pairs(train %>%
-        select(Home_Team_Goals_Scored, `Home_Team_Possession_%`, Home_Team_Total_Shots, Home_Team_Corners, Home_Team_Fouls, Home_Team_Aerials_Won, `Home_Team_Pass_Success_%`, Home_Team_Throw_Ins), pch = 21, bg = "black", col = "red")
-```
-
-```{r}
-hist(train$Home_Team_Goals_Scored,breaks=15)
-hist(train$Away_Team_Goals_Scored,breaks=15) # fuera se meten menos goles
-```
-
-
-```{r}
-Victorias_casa <- train %>% filter(resultado==1)
-Victorias_casa
-Derrotas_casa <- train %>% filter(resultado==2)
-Derrotas_casa
-Empates <- train %>% filter(resultado=="x")
-Empates
-```
-
-
-
-
-```{r}
-#Porcentaje medio de posesión por equipo en casa
-tapply(train$`Home_Team_Possession_%`,train$`Home_Team`,mean)
-```
-
-```{r}
-#Porcentaje medio de posesión por equipo fuera de casa
-tapply(train$`Away_Team_Possession_%`,train$`Away_Team`,mean)
-```
-
-
-
-```{r}
-aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train, FUN = mean) -> goles_home_team
-goles_home_team
-```
-
-```{r}
-aggregate(Away_Team_Goals_Scored ~ Away_Team, data = train, FUN = mean) -> goles_Away_team
-goles_Away_team
-```
-
-
-
-```{r}
-boxplot(Empates$`Home_Team_Possession_%`)
-boxplot(Victorias_casa$`Home_Team_Possession_%`)
-boxplot(Derrotas_casa$`Home_Team_Possession_%`)
-```
-
-```{r}
-summary(Empates$`Home_Team_Possession_%`)
-summary(Victorias_casa$`Home_Team_Possession_%`)
-summary(Derrotas_casa$`Home_Team_Possession_%`)
-#Con estos datos tan similares sacamos en conclusión que la posesión no ha influido mucho en las victorias(pobre Pep)
-```
-
-```{r}
-filter(Victorias_casa, Home_Team_Red_Cards > Away_Team_Red_Cards) 
+ggplot(train,aes(x=resultado)) + geom_bar()
+# se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
 ```
 
 ```{r}
@@ -267,28 +162,35 @@ prop.table(table(train$Home_Team_Goals_Scored == train$Away_Team_Goals_Scored))
 prop.table(table(train$Home_Team_Goals_Scored < train$Away_Team_Goals_Scored))
 ```
 
+
 ```{r}
-prop.table(table(Victorias_casa$Home_Team_Total_Shots > Victorias_casa$Away_Team_Total_Shots))
-#En un 30% de las victorias de casa el equipo de casa tiró menos tiros que el de fuera
+ggplot(train,aes(resultado ,goles)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'lightgreen') +
+  labs(title="Media de goles por partido", x="resultado", y="goles") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# en los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate). Por tanto, un partido con más goles es más probable que no acabe en empate.
 ```
 
 ```{r}
-prop.table(table(Victorias_casa$Home_Team_Blocked_Shots <= Victorias_casa$Away_Team_Blocked_Shots))
-#Los tiros bloqueados no influyen mucho en el resultado del partido
-prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team_Blocked_Shots))
-#En las derrotas si vemos que el 43% de las veces bloquearon menos 
+ggplot(train,aes(resultado ,Home_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'green') +
+  labs(title="media de goles locales por partido", x="resultado", y="goles local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
 ```
 
 ```{r}
-summary(Derrotas_casa)
-```
+ggplot(train,aes(resultado ,Away_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'green') +
+  labs(title="media de goles visitante por partido", x="resultado", y="goles visitante") +
+  theme(plot.title=element_text(hjust = 0.5))
 
-```{r}
-summary(Victorias_casa)
-```
-
-```{r}
-summary(Empates)
+# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
 ```
 
 ```{r}
@@ -310,3 +212,152 @@ sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/n
 #Media de goles por partido con empate
 sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
 ```
+
+
+```{r}
+ggplot(train,aes(resultado ,Home_Team_Total_Shots)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'pink') +
+  labs(title="media de tiros local por partido", x="resultado", y="tiros local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
+```
+
+```{r}
+ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'pink') +
+  labs(title="media de tiros a puerta local por partido", x="resultado", y="tiros a puerta local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# Sin embargo el número de tiros a puerta si influye (cuantos más tiros a puerta, más cerca de la victoria)
+```
+
+```{r}
+ggplot(train,aes(resultado ,`Home_Team_Possession_%`)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'orange') +
+  labs(title="Gráfica Pep", x="resultado", y="posesion local") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# No parece influir mucho la posesión
+```
+
+```{r}
+ggplot(train,aes(resultado ,`Away_Team_Possession_%`)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'orange') +
+  labs(title="Gráfica Pep", x="resultado", y="posesion visitante") +
+  theme(plot.title=element_text(hjust = 0.5))
+
+# El equipo local suele tener más posesion (>50%) independientemente del resultado
+```
+
+```{r}
+#Porcentaje medio de posesión por equipo en casa
+tapply(train$`Home_Team_Possession_%`,train$`Home_Team`,mean)
+```
+
+```{r}
+#Porcentaje medio de posesión por equipo fuera de casa
+tapply(train$`Away_Team_Possession_%`,train$`Away_Team`,mean)
+```
+
+```{r}
+summary(Empates$`Home_Team_Possession_%`)
+summary(Victorias_casa$`Home_Team_Possession_%`)
+summary(Derrotas_casa$`Home_Team_Possession_%`)
+#Con estos datos tan similares sacamos en conclusión que la posesión no ha influido mucho en las victorias(pobre Pep)
+```
+
+
+```{r}
+ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'red') +
+  labs(title="media de goles de cada equipo como local", x="equipos", y="goles por partido") +
+  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
+
+# media de goles por partido de cada equipo en su casa
+```
+
+```{r}
+aggregate(Home_Team_Goals_Scored ~ Home_Team, data = train, FUN = mean) -> goles_home_team
+goles_home_team
+```
+
+
+```{r}
+ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'red') +
+  labs(title="media de goles de cada equipo como visitante", x="equipos", y="goles por partido") +
+  theme(plot.title=element_text(hjust = 0.5), axis.text = element_text(angle = 90, color = "darkblue"))
+
+# Los equipos que más goles meten por partido, son los que más temporadas han estado en primera
+```
+
+```{r}
+aggregate(Away_Team_Goals_Scored ~ Away_Team, data = train, FUN = mean) -> goles_Away_team
+goles_Away_team
+```
+
+
+```{r}
+# Correlación de algunas variables
+pairs(train %>%
+        select(Home_Team_Goals_Scored, Home_Team_On_Target_Shots, Home_Team_Total_Shots, `Home_Team_Possession_%`, `Home_Team_Pass_Success_%`, Home_Team_Corners, Home_Team_Throw_Ins, Home_Team_Fouls, Home_Team_Aerials_Won), pch = 21, bg = "black", col = "red")
+```
+
+```{r}
+hist(train$Home_Team_Goals_Scored,breaks=15, main = "Histograma de goles en casa", 
+     xlab = "goles")
+```
+
+```{r}
+hist(train$Away_Team_Goals_Scored,breaks=15, main = "Histograma de goles fuera", 
+     xlab = "goles")
+# Se marcan más goles en casa que fuera
+```
+
+```{r}
+lm_fit <- lm(Home_Team_Goals_Scored~.-Home_Team, data=train)
+summary(lm_fit)
+
+#regfit_fwd <- leaps::regsubsets(Home_Team_Goals_Scored~., train, method="forward")
+#for (metric in c("r2", "adjr2", "Cp", "bic")){plot(regfit_fwd, scale=metric)}
+```
+
+Variables más influyentes en los goles marcados: Centros, despejes, tarjetas rojas,\
+
+
+```{r}
+prop.table(table(Victorias_casa$Home_Team_Total_Shots > Victorias_casa$Away_Team_Total_Shots))
+#En un 30% de las victorias de casa el equipo de casa tiró menos tiros que el de fuera
+```
+
+```{r}
+prop.table(table(Victorias_casa$Home_Team_Blocked_Shots > Victorias_casa$Away_Team_Blocked_Shots))
+#Los tiros bloqueados no influyen mucho en el resultado del partido
+```
+
+```{r}
+prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team_Blocked_Shots))
+#En las derrotas si vemos que el 43% de las veces bloquearon menos 
+```
+
+## CONCLUSIONES
+Hay muchas variables que no afectan al resultado de un partido.\
+Los equipos locales ganan más.\
+
+Hay dos equipos que sobresalen (Madrid y Barsa)\
+Hay un grupo de equipos "buenos" (nunca han descendido, meten más goles...)
+
+De cara al futuro:\
+Cuanto se parecen dos partidos?\
+Clusterizar equipos en buenos, medios y malos.\
+Calcular los puntos que suma cada equipo por partido en función de ser local o visitante, del "nivel" del rival, etc.\
+Predecir el número de goles que va a marcar cada equipo en un partido, en vez de victoria/derrota/empate.
+
+
