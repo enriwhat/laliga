@@ -1,6 +1,6 @@
 ---
 title: "datos_liga"
-author: "Enrique"
+author: "Enrique, Miguel, Sergio"
 date: "2022-10-22"
 output: html_document
 ---
