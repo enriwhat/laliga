@@ -40,7 +40,7 @@ library(knitr)
 library(readr)
 library(ggplot2)
 library(cowplot)
-
+library(GGally)
 ```
 \
 \
@@ -71,8 +71,8 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 **Score**: Resultado\
 **Half Time Score**: Resultado al descanso\
 **Match Excitement**: Emoción del partido (subjetiva)\
-**Home Team Rating**: Nota del local\
-**Away Team Rating**: Nota del visitante\
+**Home Team Rating**: Nota del local (subjetiva)\
+**Away Team Rating**: Nota del visitante (subjetiva)\
 **Home Team Possession**: Posesión local\
 **Away Team Possession**: Posesión visitante\
 **Home Team off Target Shots**: Tiros fuera local\
@@ -169,9 +169,6 @@ laliga$resultado <- as.factor(laliga$resultado)
 \
 \
 
-
-
-
 ```{r}
 # Dividimos los datos en dos datasets (train y test)
 test <- filter(laliga, year==2020)
@@ -190,17 +187,53 @@ Empates <- train %>% filter(resultado=="x")
 \
 \
 
-
 # ANÁLISIS
 
 ```{r}
-table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugado (más años en primera division)
+train %>% select(25:35) %>%
+  ggpairs(aes(color = resultado, alpha = .5))
+```
 
-#prop.table(table(train$Home_Team))
-#table(train$Home_Team, train$Away_Team)
+## VARIABLES CUALITATIVAS
+
+### RESUMEN NUMERICO
+
+```{r}
+# de aqui sacamos los equipos que ha jugado cada equipo (más años en primera division)
+as.data.frame(table(train$Home_Team) + table(train$Away_Team)) %>% arrange(desc(Freq))
+```
+
+```{r}
+# aqui vemos cuantos partidos han ganado, empatado y perdido cada equipo
+with(train, table(Home_Team, resultado))
+with(train, table(Away_Team, resultado))
+#sacar porcentaje de victorias de cada equipo y ordenar por eso
+```
+
+
+```{r}
+#numero y proporcion de victorias, derrotas y empates
+table(train$resultado)
+prop.table(table(train$resultado))
+```
+
+```{r}
+# victorias, derrotas y empates de cada equipo
+with(train, table(resultado, Home_Team))
+# proporcion de victorias, derrotas y empates de cada equipo
+t((prop.table(with(train, table(resultado, Home_Team)), margin = 2)))*100
 
 ```
+
+
 10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
+
+### VISUALIZACION
+
+
+
+## VARIABLES CUANTITATIVAS
+
 
 
 
@@ -245,7 +278,7 @@ ggplot(rojas_year_jorn,  aes(x = jornada, y = total_rojas)) + geom_point() + fac
 \
 
 ```{r}
-ggplot(train,aes(x=resultado, color = train$resultado, fill = train$resultado)) + geom_bar() + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
+ggplot(train,aes(x=resultado, color = resultado, fill = resultado)) + geom_bar() + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 # se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
 ```
 
