@@ -1,12 +1,38 @@
 ---
 title: "datos_liga"
 author: "Enrique, Miguel, Sergio"
-date: "2022-10-22"
-output: html_document
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	include = TRUE,
+	warning = TRUE,
+	message = FALSE,
+	fig.align = "center",
+	fig.height=4,
+	fig.width=15,
+	out.width = "90%"
+)
+```
+
+# INTRODUCCIÓN Y DEFINICIÓN DE OBJETIVOS
+
+-   ¿Qué hace que un equipo gane un partido?
+-   ¿Qué variables influyen en las victorias?
+-   Predecir el ganador de un partido
+
 \
-```{r include=TRUE}
+```{r}
 # Librerías
 library(dplyr)
 library(tidyr)
@@ -20,13 +46,13 @@ library(cowplot)
 \
 \
 
-## ANÁLISIS EXPLORATORIO INICIAL
+# ANÁLISIS EXPLORATORIO INICIAL
 
-```{r include=FALSE}
+```{r}
 laliga <- read_csv("combined_data_laliga.csv")
 ```
 
-```{r include=TRUE}
+```{r}
 # primeros estadisticos de clase
 str(laliga)
 ```
@@ -84,7 +110,7 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 \
 \
 
-## LIMPIEZA DE DATOS
+# LIMPIEZA DE DATOS
 
 ```{r}
 #Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
@@ -143,11 +169,7 @@ laliga$resultado <- as.factor(laliga$resultado)
 \
 \
 
-## DEFINICIÓN DE OBJETIVOS
 
--   ¿Qué hace que un equipo gane un partido?
--   ¿Qué variables influyen en las victorias?
--   Predecir el ganador de un partido
 
 
 ```{r}
@@ -169,7 +191,7 @@ Empates <- train %>% filter(resultado=="x")
 \
 
 
-## ANÁLISIS
+# ANÁLISIS
 
 ```{r}
 table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugado (más años en primera division)
@@ -182,7 +204,7 @@ table(train$Home_Team) # de aqui sacamos los equipos que más partidos han jugad
 
 
 
-```{r, include=FALSE, warning=FALSE}
+```{r}
 goles_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_goles = sum(goles)))
 tiros_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros = sum(total_disparos)))
 tiros_block_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros_bloqueados = sum(total_disparos_bloqueados)))
@@ -197,7 +219,7 @@ rojas_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( t
 ```
 \
 
-```{r, fig.align='center', warning=FALSE, fig.height=4, fig.width=15}
+```{r}
 
 ggplot(goles_year_jorn,  aes(x = jornada, y = total_goles)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de goles", title = "Nº de goles por jornada / Año") + theme(plot.title = element_text(hjust = 0.5)) + xlim(1,38)
 
@@ -222,12 +244,12 @@ ggplot(rojas_year_jorn,  aes(x = jornada, y = total_rojas)) + geom_point() + fac
 \
 \
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(x=resultado, color = train$resultado, fill = train$resultado)) + geom_bar() + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 # se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
 ```
 
-```{r include=TRUE}
+```{r}
 kable(train %>% group_by(resultado) %>% summarise(total_resultados = length(resultado)), "pipe", align = "cc")
 ```
 
@@ -250,7 +272,7 @@ prop.table(table(train$Home_Team_Goals_Scored < train$Away_Team_Goals_Scored))
 \
 
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,goles)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'green') +
@@ -260,7 +282,7 @@ ggplot(train,aes(resultado ,goles)) +
 # en los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate). Por tanto, un partido con más goles es más probable que no acabe en empate.
 ```
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Home_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'green') +
@@ -270,7 +292,7 @@ ggplot(train,aes(resultado ,Home_Team_Goals_Scored)) +
 # Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
 ```
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Away_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'green') +
@@ -302,7 +324,7 @@ sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
 \
 \
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado , total_disparos)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'pink') +
@@ -312,7 +334,7 @@ ggplot(train,aes(resultado , total_disparos)) +
 # en los partidos el numero total de disparos está bastante igualado con independencia de la victoria, derrota o empate.
 ```
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Home_Team_Total_Shots)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'pink') +
@@ -322,7 +344,7 @@ ggplot(train,aes(resultado ,Home_Team_Total_Shots)) +
 # El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
 ```
 
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'pink') +
@@ -333,7 +355,7 @@ ggplot(train,aes(resultado ,Home_Team_On_Target_Shots)) +
 ```
 
 
-```{r, fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Away_Team_Total_Shots)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'pink') +
@@ -343,7 +365,7 @@ ggplot(train,aes(resultado ,Away_Team_Total_Shots)) +
 # Igual que para el equipo local, el número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
 ```
 
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,Away_Team_On_Target_Shots)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'pink') +
@@ -365,7 +387,7 @@ sum(train$Home_Team_Blocked_Shots, train$Away_Team_Blocked_Shots)/nrow(train)
 \
 \
 
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,`Home_Team_Possession_%`)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'orange') +
@@ -375,7 +397,7 @@ ggplot(train,aes(resultado ,`Home_Team_Possession_%`)) +
 # No parece influir mucho la posesión
 ```
 
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(resultado ,`Away_Team_Possession_%`)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'orange') +
@@ -387,7 +409,7 @@ ggplot(train,aes(resultado ,`Away_Team_Possession_%`)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_disparos_bloqueados)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = "grey") +
@@ -399,7 +421,7 @@ ggplot(train,aes(resultado ,total_disparos_bloqueados)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_d_aereos)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = "brown") +
@@ -411,7 +433,7 @@ ggplot(train,aes(resultado ,total_d_aereos)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_corners)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'blue') +
@@ -423,7 +445,7 @@ ggplot(train,aes(resultado ,total_corners)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_centros)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'lightblue') +
@@ -435,7 +457,7 @@ ggplot(train,aes(resultado ,total_centros)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_despejes)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'lightgreen') +
@@ -447,7 +469,7 @@ ggplot(train,aes(resultado ,total_despejes)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_faltas)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'lightyellow') +
@@ -459,7 +481,7 @@ ggplot(train,aes(resultado ,total_faltas)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_amarillas)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'yellow') +
@@ -471,7 +493,7 @@ ggplot(train,aes(resultado ,total_amarillas)) +
 \
 \
 
-```{r fig.align='center'}
+```{r}
 ggplot(train,aes(resultado ,total_rojas)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'red') +
@@ -483,7 +505,7 @@ ggplot(train,aes(resultado ,total_rojas)) +
 
 \
 \
-```{r }
+```{r}
 #Puntos promedio por partido por equipo
 puntos_promedio_casa <- aggregate((Home_points) ~ Home_Team, data = train, mean)
 
@@ -515,7 +537,7 @@ goles_por_equipo
 ```
 \
 \
-```{r fig.align='center', warning=FALSE}
+```{r}
 #No he sido capaz de poner encima una grafica de densidad con los puntos de cada equipo 
 ggplot(goles_por_equipo, aes(x = equipo, y = goles)) +
   geom_bar(position = "dodge", stat = "summary", fill = "darkred") +
@@ -544,7 +566,7 @@ summary(Derrotas_casa$`Home_Team_Possession_%`)
 ```
 \
 \
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'red') +
@@ -555,7 +577,7 @@ ggplot(train,aes(Home_Team ,Home_Team_Goals_Scored)) +
 ```
 \
 \
-```{r fig.align='center', warning=FALSE}
+```{r}
 ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'red') +
@@ -566,20 +588,20 @@ ggplot(train,aes(Away_Team ,Away_Team_Goals_Scored)) +
 ```
 \
 \
-```{r fig.align='center', warning=FALSE, fig.height=10, fig.width=15}
+```{r}
 # Correlación de algunas variables
 pairs(train %>%
         select(Home_Team_Goals_Scored, Home_Team_On_Target_Shots, Home_Team_Total_Shots, `Home_Team_Possession_%`, `Home_Team_Pass_Success_%`, Home_Team_Corners, Home_Team_Throw_Ins, Home_Team_Fouls, Home_Team_Aerials_Won), pch = 21, bg = "black", col = "red")
 ```
 \
 \
-```{r fig.align='center', warning=FALSE}
+```{r}
 hist(train$Home_Team_Goals_Scored,breaks=15, main = "Histograma de goles en casa", 
      xlab = "goles")
 ```
 \
 \
-```{r fig.align='center', warning=FALSE}
+```{r}
 hist(train$Away_Team_Goals_Scored,breaks=15, main = "Histograma de goles fuera", 
      xlab = "goles")
 # Se marcan más goles en casa que fuera
@@ -617,73 +639,73 @@ prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team
 \
 \
 
-## REGRESION
+# REGRESION
 
 Regrsión con todas las variables
 
-```{r include=TRUE}
+```{r}
 
 lm_goles <- lm(goles~., data = train)
 summary(lm_goles)
 
 ```
-```{r include=TRUE}
+```{r}
 
 lm_disparos <- lm(total_disparos~., data = train)
 summary(lm_disparos)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_disparos_bloqueados <- lm(total_disparos_bloqueados~., data = train)
 summary(lm_disparos_bloqueados)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_corners <- lm(total_corners~., data = train)
 summary(lm_corners)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_centros <- lm(total_centros~., data = train)
 summary(lm_centros)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_d_aereos <- lm(total_d_aereos~., data = train)
 summary(lm_d_aereos)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_despejes <- lm(total_despejes~., data = train)
 summary(lm_despejes)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_faltas <- lm(total_faltas~., data = train)
 summary(lm_faltas)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_amarillas <- lm(total_amarillas~., data = train)
 summary(lm_amarillas)
 
 ```
 
-```{r include=TRUE}
+```{r}
 
 lm_rojas <- lm(total_rojas~., data = train)
 summary(lm_rojas)
@@ -692,15 +714,9 @@ summary(lm_rojas)
 
 REGRESION BACKWARD
 
-
-
-
-
-
-
 \
 \
-## CONCLUSIONES
+# CONCLUSIONES
 Hay muchas variables que no afectan al resultado de un partido.\
 Los equipos locales ganan más.\
 
@@ -713,6 +729,3 @@ Clusterizar equipos en buenos, medios y malos.\
 Incluir las rachas de victorias, dorrotas y empates.\
 Calcular los puntos que suma cada equipo por partido en función de ser local o visitante, del "nivel" del rival, etc.\
 Predecir el número de goles que va a marcar cada equipo en un partido, en vez de victoria/derrota/empate.
-
-
-
