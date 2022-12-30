@@ -158,6 +158,18 @@ laliga <- mutate(laliga, jornada = ceiling(row_number() / 10)) %>%
         mutate(jornada = (jornada - 1) %% 38 + 1)
 ```
 
+```{r}
+goles_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_goles = sum(goles)))
+tiros_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros = sum(total_disparos)))
+tiros_block_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros_bloqueados = sum(total_disparos_bloqueados)))
+corners_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_corners = sum(total_corners)))
+centros_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_centros = sum(total_centros)))
+d_aer_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_d_aer = sum(total_d_aereos)))
+t_despj_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_despejes = sum(total_despejes)))
+faltas_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_faltas = sum(total_faltas)))
+amarll_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_amarillas = sum(total_amarillas)))
+rojas_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_rojas = sum(total_rojas)))
+```
 
 ```{r}
 # Convertimos a categorias
@@ -194,9 +206,9 @@ train %>% select(25:35) %>%
   ggpairs(aes(color = resultado, alpha = .5))
 ```
 
-## VARIABLES CUALITATIVAS
+## RESUMEN NUMERICO
 
-### RESUMEN NUMERICO
+### VARIABLES CUALITATIVAS
 
 ```{r}
 # de aqui sacamos los equipos que ha jugado cada equipo (más años en primera division)
@@ -228,82 +240,121 @@ t((prop.table(with(train, table(resultado, Home_Team)), margin = 2)))*100
 
 10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
 
-### VISUALIZACION
-
-
-
-## VARIABLES CUANTITATIVAS
-
-
-
+### VARIABLES CUANTITATIVAS
 
 ```{r}
-goles_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_goles = sum(goles)))
-tiros_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros = sum(total_disparos)))
-tiros_block_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_tiros_bloqueados = sum(total_disparos_bloqueados)))
-corners_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_corners = sum(total_corners)))
-centros_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_centros = sum(total_centros)))
-d_aer_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_d_aer = sum(total_d_aereos)))
-t_despj_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_despejes = sum(total_despejes)))
-faltas_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_faltas = sum(total_faltas)))
-amarll_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_amarillas = sum(total_amarillas)))
-rojas_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_rojas = sum(total_rojas)))
-
-```
-\
-
-```{r}
-
-ggplot(goles_year_jorn,  aes(x = jornada, y = total_goles)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de goles", title = "Nº de goles por jornada / Año") + theme(plot.title = element_text(hjust = 0.5)) + xlim(1,38)
-
-ggplot(tiros_year_jorn,  aes(x = jornada, y = total_tiros)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de disparos", title = "Nº de disparos por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(tiros_block_year_jorn,  aes(x = jornada, y = total_tiros_bloqueados)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de disparos_bloqueados", title = "Nº de disparos bloqueados por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(corners_year_jorn,  aes(x = jornada, y = total_corners)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de corners", title = "Nº de corners por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(centros_year_jorn,  aes(x = jornada, y = total_centros)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de centros", title = "Nº de centros por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(t_despj_year_jorn,  aes(x = jornada, y = total_despejes)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de despejes", title = "Nº de despejes por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(faltas_year_jorn,  aes(x = jornada, y = total_faltas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de faltas", title = "Nº de faltas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(amarll_year_jorn,  aes(x = jornada, y = total_amarillas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de tarj. Amarillas", title = "Nº de tarj. Amarillas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(rojas_year_jorn,  aes(x = jornada, y = total_rojas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de tarj. Rojas", title = "Nº de tarj. Rojas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
-
+# Posesion
+summary(train$`Home_Team_Possession_%`)
+summary(train$`Away_Team_Possession_%`)
 ```
 
-\
-\
+```{r}
+# Tiros
+summary(train$Home_Team_Off_Target_Shots)
+summary(train$Away_Team_Off_Target_Shots)
+
+summary(train$Home_Team_On_Target_Shots)
+summary(train$Away_Team_On_Target_Shots)
+
+summary(train$Home_Team_Total_Shots)
+summary(train$Away_Team_Total_Shots)
+```
 
 ```{r}
-ggplot(train,aes(x=resultado, color = resultado, fill = resultado)) + geom_bar() + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
+# Bloqueos
+summary(train$Home_Team_Blocked_Shots)
+summary(train$Away_Team_Blocked_Shots)
+```
+
+```{r}
+# Corners
+summary(train$Home_Team_Corners)
+summary(train$Away_Team_Corners)
+```
+
+```{r}
+# Centros
+summary(train$Home_Team_Throw_Ins)
+summary(train$Away_Team_Throw_Ins)
+```
+
+```{r}
+# Pases
+summary(train$`Home_Team_Pass_Success_%`)
+summary(train$`Away_Team_Pass_Success_%`)
+```
+
+```{r}
+# Balones aereos
+summary(train$Home_Team_Aerials_Won)
+summary(train$Away_Team_Aerials_Won)
+```
+
+```{r}
+# Despejes
+summary(train$Home_Team_Clearances)
+summary(train$Away_Team_Clearances)
+```
+
+```{r}
+# Faltas
+summary(train$Home_Team_Fouls)
+summary(train$Away_Team_Fouls)
+```
+
+```{r}
+# Amarillas
+summary(train$Home_Team_Yellow_Cards)
+summary(train$Away_Team_Yellow_Cards)
+```
+
+```{r}
+# Rojas
+summary(train$Home_Team_Second_Yellow_Cards)
+summary(train$Away_Team_Second_Yellow_Cards)
+```
+
+```{r}
+# Rojas
+summary(train$Home_Team_Red_Cards)
+summary(train$Away_Team_Red_Cards)
+```
+
+```{r}
+# Goles
+summary(train$goles)
+summary(train$goles)
+```
+
+```{r}
+#Media de goles por partido con victoria local
+sum(Victorias_casa$Home_Team_Goals_Scored,Victorias_casa$Away_Team_Goals_Scored)/nrow(Victorias_casa)
+```
+
+```{r}
+#Media de goles por partido con victoria visitante
+sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/nrow(Derrotas_casa)
+```
+
+```{r}
+#Media de goles por partido con empate
+sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
+```
+
+## VISUALIZACION
+
+### VARIABLES CUALITATIVAS
+
+```{r}
+ggplot(train, aes(resultado, fill = resultado)) +
+  geom_bar() +
+  labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 # se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
 ```
 
 ```{r}
-kable(train %>% group_by(resultado) %>% summarise(total_resultados = length(resultado)), "pipe", align = "cc")
+ggplot(train, aes(Home_Team)) + geom_bar() + ggtitle("Núm. prof. por categoría")
 ```
-
-
-```{r}
-#Porcentaje de victorias caseras(TRUE)
-prop.table(table(train$Home_Team_Goals_Scored > train$Away_Team_Goals_Scored))
-```
-
-```{r}
-#Porcentaje de empates
-prop.table(table(train$Home_Team_Goals_Scored == train$Away_Team_Goals_Scored))
-```
-
-```{r}
-#Porcentaje de derrotas caseras
-prop.table(table(train$Home_Team_Goals_Scored < train$Away_Team_Goals_Scored))
-```
-\
-\
-
 
 ```{r}
 ggplot(train,aes(resultado ,goles)) +
@@ -334,28 +385,6 @@ ggplot(train,aes(resultado ,Away_Team_Goals_Scored)) +
 
 # Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
 ```
-
-```{r}
-#Media de goles por partido
-sum(train$Home_Team_Goals_Scored, train$Away_Team_Goals_Scored)/nrow(train)
-```
-
-```{r}
-#Media de goles por partido con victoria local
-sum(Victorias_casa$Home_Team_Goals_Scored,Victorias_casa$Away_Team_Goals_Scored)/nrow(Victorias_casa)
-```
-
-```{r}
-#Media de goles por partido con victoria visitante
-sum(Derrotas_casa$Home_Team_Goals_Scored,Derrotas_casa$Away_Team_Goals_Scored)/nrow(Derrotas_casa)
-```
-
-```{r}
-#Media de goles por partido con empate
-sum(Empates$Home_Team_Goals_Scored,Empates$Away_Team_Goals_Scored)/nrow(Empates)
-```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado , total_disparos)) +
@@ -407,18 +436,6 @@ ggplot(train,aes(resultado ,Away_Team_On_Target_Shots)) +
 
 # Sin embargo  volvemos a ver que el número de tiros a puerta si influye (cuantos más tiros a puerta, más cerca de la victoria)
 ```
-```{r}
-#Media de disparos por partido
-sum(train$Home_Team_Total_Shots, train$Away_Team_Total_Shots)/nrow(train)
-#Media de disparos a puerta partido
-sum(train$Home_Team_On_Target_Shots, train$Away_Team_On_Target_Shots)/nrow(train)
-#Media de disparos bloqueados
-sum(train$Home_Team_Blocked_Shots, train$Away_Team_Blocked_Shots)/nrow(train)
-```
-
-
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,`Home_Team_Possession_%`)) +
@@ -439,8 +456,6 @@ ggplot(train,aes(resultado ,`Away_Team_Possession_%`)) +
 
 # El equipo local suele tener más posesion (>50%) independientemente del resultado
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_disparos_bloqueados)) +
@@ -451,8 +466,6 @@ ggplot(train,aes(resultado ,total_disparos_bloqueados)) +
 
 # El numero de disparos bloqueados no parece un factor determinante en la victoria
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_d_aereos)) +
@@ -463,8 +476,6 @@ ggplot(train,aes(resultado ,total_d_aereos)) +
 
 # El numero de duelos aereos no parece un factor determinante en la victoria
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_corners)) +
@@ -475,8 +486,6 @@ ggplot(train,aes(resultado ,total_corners)) +
 
 # El numero de corners no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de corners está muy repartido
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_centros)) +
@@ -487,8 +496,6 @@ ggplot(train,aes(resultado ,total_centros)) +
 
 # El numero de centros no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de centros está muy repartido
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_despejes)) +
@@ -499,8 +506,6 @@ ggplot(train,aes(resultado ,total_despejes)) +
 
 # El numero de despejes no parece un factor determinante en la victoria incluso parece que a mayor número de despejes medios el partido parece más probable que acabe en empate
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_faltas)) +
@@ -511,8 +516,6 @@ ggplot(train,aes(resultado ,total_faltas)) +
 
 # El numero de faltas no parece un factor determinante.
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_amarillas)) +
@@ -523,8 +526,6 @@ ggplot(train,aes(resultado ,total_amarillas)) +
 
 # El numero de tarjetas amarillas no parece un factor determinante.
 ```
-\
-\
 
 ```{r}
 ggplot(train,aes(resultado ,total_rojas)) +
@@ -536,8 +537,34 @@ ggplot(train,aes(resultado ,total_rojas)) +
 # El numero de tarjetas rojas no parece un factor determinante.
 ```
 
-\
-\
+### VARIABLES CUANTITATIVAS
+
+```{r}
+
+ggplot(goles_year_jorn,  aes(x = jornada, y = total_goles)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de goles", title = "Nº de goles por jornada / Año") + theme(plot.title = element_text(hjust = 0.5)) + xlim(1,38)
+
+ggplot(tiros_year_jorn,  aes(x = jornada, y = total_tiros)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de disparos", title = "Nº de disparos por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(tiros_block_year_jorn,  aes(x = jornada, y = total_tiros_bloqueados)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de disparos_bloqueados", title = "Nº de disparos bloqueados por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(corners_year_jorn,  aes(x = jornada, y = total_corners)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de corners", title = "Nº de corners por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(centros_year_jorn,  aes(x = jornada, y = total_centros)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de centros", title = "Nº de centros por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(t_despj_year_jorn,  aes(x = jornada, y = total_despejes)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de despejes", title = "Nº de despejes por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(faltas_year_jorn,  aes(x = jornada, y = total_faltas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de faltas", title = "Nº de faltas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(amarll_year_jorn,  aes(x = jornada, y = total_amarillas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de tarj. Amarillas", title = "Nº de tarj. Amarillas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(rojas_year_jorn,  aes(x = jornada, y = total_rojas)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de tarj. Rojas", title = "Nº de tarj. Rojas por jornada / Año") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+## OTROS
+
 ```{r}
 #Puntos promedio por partido por equipo
 puntos_promedio_casa <- aggregate((Home_points) ~ Home_Team, data = train, mean)
@@ -548,8 +575,7 @@ puntos_promedio <- data.frame(puntos_promedio_casa$Home_Team, (puntos_promedio_c
 names(puntos_promedio) <- c("Equipo", "Puntos_por_partido")
 puntos_promedio
 ```
-\
-\
+
 ```{r}
 #Esta seria la clasificacion con la media de puntos por partido por equipo
 clasificacion_media <- arrange(puntos_promedio,desc(Puntos_por_partido))
