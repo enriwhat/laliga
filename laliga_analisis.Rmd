@@ -164,7 +164,7 @@ laliga <- mutate(laliga, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_C
 # Convertimos a categorias
 laliga$Home_Team <- as.factor(laliga$Home_Team)
 laliga$Away_Team <- as.factor(laliga$Away_Team)
-laliga$score <- as.factor(laliga$score)
+laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
 
 #laliga$year <- as.factor(laliga$year)
 #laliga$jornada <- as.factor(laliga$jornada)
@@ -194,9 +194,9 @@ train %>% select(25:35) %>%
   ggpairs(aes(color = score, alpha = .5))
 ```
 
-## RESUMEN NUMERICO
+## VARIABLES CUALITATIVAS
 
-### VARIABLES CUALITATIVAS
+### RESUMEN NUMERICO
 
 ```{r}
 # de aqui sacamos los equipos que ha jugado cada equipo (más años en primera division)
@@ -206,131 +206,44 @@ as.data.frame(table(train$Home_Team) + table(train$Away_Team)) %>% arrange(desc(
 ```{r}
 #numero y proporcion de victorias, derrotas y empates
 table(train$score)
-prop.table(table(train$score))
+prop.table(table(train$score))*100
 ```
 
 ```{r}
 # aqui vemos cuantos partidos han ganado, empatado y perdido cada equipo
 with(train, table(Home_Team, score))
 with(train, table(Away_Team, score))
-#sacar porcentaje de victorias de cada equipo y ordenar por eso
 ```
 
 ```{r}
-# proporcion de victorias, derrotas y empates de cada equipo
-t((prop.table(with(train, table(score, Home_Team)), margin = 2)))*100
-t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100
+# porcentaje de victorias, derrotas y empates de cada equipo
+round(t((prop.table(with(train, table(score, Home_Team)), margin = 2)))*100,2)
+round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2)
 
 ```
 
-
-10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
-
-### VARIABLES CUANTITATIVAS
-
-```{r}
-# Posesion
-summary(train$`Home_Team_Possession_%`)
-summary(train$`Away_Team_Possession_%`)
-```
-
-```{r}
-# Tiros
-summary(train$Home_Team_Off_Target_Shots)
-summary(train$Away_Team_Off_Target_Shots)
-
-summary(train$Home_Team_On_Target_Shots)
-summary(train$Away_Team_On_Target_Shots)
-
-summary(train$Home_Team_Total_Shots)
-summary(train$Away_Team_Total_Shots)
-```
-
-```{r}
-# Bloqueos
-summary(train$Home_Team_Blocked_Shots)
-summary(train$Away_Team_Blocked_Shots)
-```
-
-```{r}
-# Corners
-summary(train$Home_Team_Corners)
-summary(train$Away_Team_Corners)
-```
-
-```{r}
-# Centros
-summary(train$Home_Team_Throw_Ins)
-summary(train$Away_Team_Throw_Ins)
-```
-
-```{r}
-# Pases
-summary(train$`Home_Team_Pass_Success_%`)
-summary(train$`Away_Team_Pass_Success_%`)
-```
-
-```{r}
-# Balones aereos
-summary(train$Home_Team_Aerials_Won)
-summary(train$Away_Team_Aerials_Won)
-```
-
-```{r}
-# Despejes
-summary(train$Home_Team_Clearances)
-summary(train$Away_Team_Clearances)
-```
-
-```{r}
-# Faltas
-summary(train$Home_Team_Fouls)
-summary(train$Away_Team_Fouls)
-```
-
-```{r}
-# Amarillas
-summary(train$Home_Team_Yellow_Cards)
-summary(train$Away_Team_Yellow_Cards)
-```
-
-```{r}
-# Segundas amarillas
-summary(train$Home_Team_Second_Yellow_Cards)
-summary(train$Away_Team_Second_Yellow_Cards)
-```
-
-```{r}
-# Rojas
-summary(train$Home_Team_Red_Cards)
-summary(train$Away_Team_Red_Cards)
-```
-
-```{r}
-# Goles
-summary(train$goals)
-summary(train$goals)
-```
-
-## VISUALIZACION
-
-### VARIABLES CUALITATIVAS
+### VISUALIZACION
 
 ```{r}
 ggplot(train, aes(score, fill = score)) +
   geom_bar() +
+  scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) +
   labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 # se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
 ```
 
 ```{r}
-ggplot(train, aes(Home_Team)) + geom_bar() + ggtitle("Núm. prof. por categoría")
+ggplot(train, aes(Home_Team)) +
+  geom_bar() +
+  coord_flip() +
+  labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate")
+  
 ```
 
 ```{r}
-ggplot(train,aes(score ,goals)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'green') +
+ggplot(train,aes(score ,goals, fill = score)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean") +
+  scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) +
   labs(title="Media de goles por partido", x="resultado", y="goles") +
   theme(plot.title=element_text(hjust = 0.5))
 
@@ -338,13 +251,15 @@ ggplot(train,aes(score ,goals)) +
 ```
 
 ```{r}
-ggplot(train,aes(score ,Home_Team_Goals_Scored)) +
+ggplot(train,aes(score ,Home_Team_Goals_Scored, Away_Team_Goals_Scored)) +
   geom_bar(position = "dodge", stat = "summary", fun = "mean",
            color = 'black', fill = 'green') +
   labs(title="media de goles EQ. LOCAL por partido", x="resultado", y="goles local") +
   theme(plot.title=element_text(hjust = 0.5))
 
 # Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
+
+#JUNTAR ESTA GRAFICA CON LA ANTERIOR (cada columna coloreada con los goles locales y visitantes)
 ```
 
 ```{r}
@@ -508,7 +423,131 @@ ggplot(train,aes(score ,total_red_cards)) +
 # El numero de tarjetas rojas no parece un factor determinante.
 ```
 
-### VARIABLES CUANTITATIVAS
+10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
+
+## VARIABLES CUANTITATIVAS
+
+### RESUMEN NUMERICO
+
+```{r}
+# Posesion
+summary(train$`Home_Team_Possession_%`)
+summary(train$`Away_Team_Possession_%`)
+```
+
+```{r}
+# Tiros
+summary(train$Home_Team_Off_Target_Shots)
+summary(train$Away_Team_Off_Target_Shots)
+
+summary(train$Home_Team_On_Target_Shots)
+summary(train$Away_Team_On_Target_Shots)
+
+summary(train$Home_Team_Total_Shots)
+summary(train$Away_Team_Total_Shots)
+```
+
+```{r}
+# Bloqueos
+summary(train$Home_Team_Blocked_Shots)
+summary(train$Away_Team_Blocked_Shots)
+```
+
+```{r}
+# Corners
+summary(train$Home_Team_Corners)
+summary(train$Away_Team_Corners)
+```
+
+```{r}
+# Centros
+summary(train$Home_Team_Throw_Ins)
+summary(train$Away_Team_Throw_Ins)
+```
+
+```{r}
+# Pases
+summary(train$`Home_Team_Pass_Success_%`)
+summary(train$`Away_Team_Pass_Success_%`)
+```
+
+```{r}
+# Balones aereos
+summary(train$Home_Team_Aerials_Won)
+summary(train$Away_Team_Aerials_Won)
+```
+
+```{r}
+# Despejes
+summary(train$Home_Team_Clearances)
+summary(train$Away_Team_Clearances)
+```
+
+```{r}
+# Faltas
+summary(train$Home_Team_Fouls)
+summary(train$Away_Team_Fouls)
+```
+
+```{r}
+# Amarillas
+summary(train$Home_Team_Yellow_Cards)
+summary(train$Away_Team_Yellow_Cards)
+```
+
+```{r}
+# Segundas amarillas
+summary(train$Home_Team_Second_Yellow_Cards)
+summary(train$Away_Team_Second_Yellow_Cards)
+```
+
+```{r}
+# Rojas
+summary(train$Home_Team_Red_Cards)
+summary(train$Away_Team_Red_Cards)
+```
+
+```{r}
+# Goles
+summary(train$goals)
+summary(train$goals)
+```
+
+### VISUALIZACION
+
+
+```{r}
+ggplot(train, aes(x = goals, fill = score)) + 
+  geom_dotplot(binwidth = 0.1)
+```
+
+```{r}
+ggplot(train, aes(x = Home_Team_Goals_Scored)) +
+  geom_histogram(fill="white", colour="black") +
+  ggtitle('Goles')
+
+ggplot(train, aes(x = Away_Team_Goals_Scored)) +
+  geom_histogram(fill="white", colour="black") +
+  ggtitle('Goles')
+```
+
+
+```{r}
+ggplot(train, aes(x = Home_Team_Clearances)) +
+  geom_histogram(fill="white", colour="black")
+
+ggplot(train, aes(x = Home_Team_Fouls)) +
+  geom_histogram(fill="white", colour="black") 
+```
+
+```{r}
+ggplot(train, aes(Home_Team_Goals_Scored)) +
+  geom_boxplot()
+
+ggplot(train, aes(Away_Team_Goals_Scored)) +
+  geom_boxplot()
+```
+
 
 ```{r}
 goles_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_goles = sum(goals)))
