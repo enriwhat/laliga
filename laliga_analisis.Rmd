@@ -806,6 +806,11 @@ summary(lm_rojas)
 
 ```
 
+```{r}
+
+```
+
+
 REGRESION BACKWARD
 
 \
