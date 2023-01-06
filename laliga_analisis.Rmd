@@ -1,6 +1,6 @@
 ---
 title: "datos_liga"
-author: "Enrique, Miguel, Sergio"
+author: "Enrique Roa, Miguel Ocon, Sergio fernández"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
   html_document:
@@ -18,21 +18,42 @@ knitr::opts_chunk$set(
 	warning = TRUE,
 	message = FALSE,
 	fig.align = "center",
-	fig.height=4,
+	fig.height=10,
 	fig.width=15,
 	out.width = "90%"
 )
 ```
 
+\
+
 # INTRODUCCIÓN Y DEFINICIÓN DE OBJETIVOS
+
+\
+
+En este proyecto vamos a estudiar el dataset llamado "combined_data_laliga.csv" donde se encuentran todos los partidos de la temporada 2014 hasta la temporada 2020, ambas incluidas, con una recopilación de los principales eventos que ocurren en un partido, goles, tiros a puerta, faltas, tarjetas...
+
+\
 
 -   ¿Qué hace que un equipo gane un partido?
 -   ¿Qué variables influyen en las victorias?
--   Predecir el ganador de un partido
+-   ¿Es posible predecir el ganador de un partido?
 
 \
+
+Para dar respuesta a todas estas preguntas estos han sido los pasos que hemos ido dando en nuestro estudio:
+
+-   Lectura y exploración inicial
+-   Limpieza de datos
+-   Trasformación de variables
+-   División del dataset en train (2014 - 2019) y test (2020)
+-   EDA
+-   Regresión
+
+\
+
+## LIBRERÍAS UTILIZADAS
+
 ```{r}
-# Librerías
 library(dplyr)
 library(tidyr)
 library(knitr)
@@ -41,29 +62,42 @@ library(ggplot2)
 library(cowplot)
 library(GGally)
 ```
+
+\
+
+## LECTURA DE DATOS
+
+```{r}
+laliga <- read_csv("combined_data_laliga.csv")
+```
+
 \
 \
 \
 
 # ANÁLISIS EXPLORATORIO INICIAL
 
-```{r}
-laliga <- read_csv("combined_data_laliga.csv")
-```
+\
+
+Exploración inicial de datos a través de estadísticos principales
 
 ```{r}
-# primeros estadisticos de clase
 str(laliga)
 ```
 
 ```{r}
-summary(laliga) #medias y medianas son bastante similares, asi que se pueden analizar como normales
+summary(laliga) 
 ```
+
+\
 
 El dataframe contiene todos los partidos de la liga española de 7 temporadas (de 2014 a 2020).\
 
 -   2660 observaciones (partidos)
--   41 variables
+-   40 variables
+-   4 variables cualitativas (dos de tipo texto)
+-   36 variables cuantitativas discretas
+-   No hay valores faltantes
 
 **Home Team**: Equipo local\
 **Away Team**: Equipo visitante\
@@ -107,12 +141,15 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 **Year**: Año\
 \
 \
+
+# LIMPIEZA Y CREACIÓN
+
 \
 
-# LIMPIEZA DE DATOS
+## LIMPIEZA DE DATOS
 
 ```{r}
-#Limpio los datos de las columnas quitando los espacios y cambiandolos por guiones, puesto que los espacios dan bastantes problemas a la hora de llamar a las variables
+#Limpieza de datos de las columnas quitando los espacios y cambiandolos por guiones ya que los espacios dan bastantes problemas a la hora de llamar a las variables
 names(laliga) <- gsub(" ","_", names(laliga))
 ```
 
@@ -127,7 +164,12 @@ laliga$`Home_Team_Goals_Conceeded` <- NULL
 laliga$`Away_Team_Goals_Conceeded` <- NULL
 ```
 
+\
+
+## CREACIÓN DE NUEVAS VARIABLES
+
 ```{r}
+# Creación de campos que se quieren estudiar más adelante
 laliga <- mutate(laliga, score = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, "1",
                                           ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, "2", "x")))
 
@@ -145,6 +187,7 @@ laliga <- mutate(laliga, jornada = ceiling(row_number() / 10)) %>%
 ```
 
 ```{r}
+# Creación de más campos que se quieren estudiar conforme avance el proyecto
 laliga <- mutate(laliga, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
 laliga <- mutate(laliga, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
 laliga <- mutate(laliga, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
@@ -160,24 +203,32 @@ laliga <- mutate(laliga, total_second_yellow_cards = Home_Team_Second_Yellow_Car
 laliga <- mutate(laliga, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_Cards)
 ```
 
+\
+
+## CONVERSIÓN DE VARIABLES
+
 ```{r}
-# Convertimos a categorias
+# Convertimos de variables a categorias
 laliga$Home_Team <- as.factor(laliga$Home_Team)
 laliga$Away_Team <- as.factor(laliga$Away_Team)
 laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
-
-#laliga$year <- as.factor(laliga$year)
-#laliga$jornada <- as.factor(laliga$jornada)
 ```
+
 \
-\
+
+## DIVISIÓN TRAIN - TEST
+
 ```{r}
-# Dividimos los datos en dos datasets (train y test)
 test <- filter(laliga, year==2020)
 train <- filter(laliga, year<2020)
+
 #write.csv(test,"test/test_laliga.csv")
 #write.csv(train,"train/train_laliga.csv")
 ```
+
+\
+
+## CREACIÓN DE DATASETS ÚTILES
 
 ```{r}
 # dataframes separados por resultado
@@ -185,21 +236,75 @@ Victorias_casa <- train %>% filter(score==1)
 Derrotas_casa <- train %>% filter(score==2)
 Empates <- train %>% filter(score=="x")
 ```
+
+\
+
+## RESUMEN FINAL DE VARIABLES
+
+
+```{r}
+str(train)
+```
+\
+
+Las nuevas variables creadas son las siguientes:
+
+-   **score**: resultado 1 X 2
+-   **goals**: total goles del partido
+-   **home_points**: puntos del equipo local
+-   **away_points**: de tipo categórico
+-   **jornada**: nº de jornada liguera
+-   **total_off_target_shots**: total disparos NO a puerta
+-   **total_on_target_shots**: total disparos a puerta
+-   **total_shots**: total disparos
+-   **total_blocked_shots**: total disparos bloqueados
+-   **total_corners**: corners totales
+-   **total_throw_ins**: total centros al área
+-   **total_pass_success**: pases totales con éxito
+-   **total_aerials_won**: balones aéreos ganados totales
+-   **total_clearances**: despejes totales
+-   **total_fouls**: faltas totales
+-   **total_yellow_cards**: tarjetas amarillas totales
+-   **total_yellow_cards**: segundas tarjetas amarillas totales
+-   **total_red_cards**: tarjetas rojas totales
+
+\
+
+```{r}
+summary(train)
+```
+
 \
 \
-# ANÁLISIS
+
+# ANÁLISIS EXPLORATORIO DE DATOS (EDA)
+
+\
 
 ```{r}
 train %>% select(25:35) %>%
   ggpairs(aes(color = score, alpha = .5))
 ```
 
+\
+
 ## VARIABLES CUALITATIVAS
+
+Las variables cualitativas de este data set son las siguientes:
+
+-   **Home Team**: Equipo local
+-   **Away Team**: Equipo visitante
+-   **Score**: Resultado (eliminado en la fase de limpiado)
+-   **Half Time Score**: Resultado al descanso (eliminado en la fase de limpiado)
+
+
+
+\
 
 ### RESUMEN NUMERICO
 
 ```{r}
-# de aqui sacamos los equipos que ha jugado cada equipo (más años en primera division)
+# Sacamos los equipos que ha jugado cada equipo (más años en primera division)
 as.data.frame(table(train$Home_Team) + table(train$Away_Team)) %>% arrange(desc(Freq))
 ```
 
@@ -828,3 +933,4 @@ Clusterizar equipos en buenos, medios y malos.\
 Incluir las rachas de victorias, dorrotas y empates.\
 Calcular los puntos que suma cada equipo por partido en función de ser local o visitante, del "nivel" del rival, etc.\
 Predecir el número de goles que va a marcar cada equipo en un partido, en vez de victoria/derrota/empate.
+
