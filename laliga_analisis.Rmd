@@ -1,6 +1,6 @@
 ---
 title: "datos_liga"
-author: "Enrique Roa, Miguel Ocon, Sergio fernández"
+author: "Enrique Roa, Miguel Ocón, Sergio Fernández"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
   html_document:
@@ -85,6 +85,8 @@ Exploración inicial de datos a través de estadísticos principales
 str(laliga)
 ```
 
+\
+
 ```{r}
 summary(laliga) 
 ```
@@ -116,7 +118,7 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 **Home Team Throw Ins**: Centros local\
 **Home Team Pass Success**: Pases exitosos local\
 **Home Team Aerials Won**: Balones aereos ganados local\
-**Home Team Clearences**: Despejes local\
+**Home Team Clearances**: Despejes local\
 **Home Team Fouls**: Faltas local\
 **Home Team Yellow Cards**: Amarillas local\
 **Home Team Second Yellow Cards**: Segundas amarillas local\
@@ -129,7 +131,7 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 **Away Team Throw Ins**: Centros visitante\
 **Away Team Pass Success**: Pases exitosos visitante\
 **Away Team Aerials Won**: Balones aereos ganados visitante\
-**Away Team Clearences**: Despejes visitante\
+**Away Team Clearances**: Despejes visitante\
 **Away Team Fouls**: Faltas visitante\
 **Away Team Yellow Cards**: Amarillas visitante\
 **Away Team Second Yellow Cards**: Segundas amarillas visitante\
@@ -148,13 +150,17 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 
 ## LIMPIEZA DE DATOS
 
+\
+
+Limpieza de datos en columnas quitando los espacios y cambiandolos por guiones ya que los espacios dan bastantes problemas a la hora de llamar a las variables.
+
 ```{r}
-#Limpieza de datos de las columnas quitando los espacios y cambiandolos por guiones ya que los espacios dan bastantes problemas a la hora de llamar a las variables
 names(laliga) <- gsub(" ","_", names(laliga))
 ```
 
+Limpieza de variables que no nos interesa estudiar
+
 ```{r}
-# Limpieza de variables que no nos interesan
 laliga$Score <-  NULL
 laliga$`Half_Time_Score` <- NULL
 laliga$`Match_Excitement` <- NULL
@@ -168,8 +174,11 @@ laliga$`Away_Team_Goals_Conceeded` <- NULL
 
 ## CREACIÓN DE NUEVAS VARIABLES
 
+\
+
+Creación de campos que interesa estudiar más adelante
+
 ```{r}
-# Creación de campos que se quieren estudiar más adelante
 laliga <- mutate(laliga, score = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, "1",
                                           ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, "2", "x")))
 
@@ -186,8 +195,11 @@ laliga <- mutate(laliga, jornada = ceiling(row_number() / 10)) %>%
         mutate(jornada = (jornada - 1) %% 38 + 1)
 ```
 
+\
+
+Creación de campos que se quieren estudiar conforme avance el proyecto.
+
 ```{r}
-# Creación de más campos que se quieren estudiar conforme avance el proyecto
 laliga <- mutate(laliga, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
 laliga <- mutate(laliga, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
 laliga <- mutate(laliga, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
@@ -207,8 +219,11 @@ laliga <- mutate(laliga, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_C
 
 ## CONVERSIÓN DE VARIABLES
 
+\
+
+Convertimos determinadas variables a categorías.
+
 ```{r}
-# Convertimos de variables a categorias
 laliga$Home_Team <- as.factor(laliga$Home_Team)
 laliga$Away_Team <- as.factor(laliga$Away_Team)
 laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
@@ -217,6 +232,10 @@ laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
 \
 
 ## DIVISIÓN TRAIN - TEST
+
+\
+
+Dividimos el dataset original en train y test. Decidimos que train contenga 6 de las 7 temporadas para utilizar los partidos de la 7ª (temp. 2020) en la fase de test.
 
 ```{r}
 test <- filter(laliga, year==2020)
@@ -230,8 +249,11 @@ train <- filter(laliga, year<2020)
 
 ## CREACIÓN DE DATASETS ÚTILES
 
+\
+
+Creación de dataset útiles para diversos análisis y comparativas. Dataframes separados por tipo de resultado "score".
+
 ```{r}
-# dataframes separados por resultado
 Victorias_casa <- train %>% filter(score==1)
 Derrotas_casa <- train %>% filter(score==2)
 Empates <- train %>% filter(score=="x")
@@ -241,6 +263,7 @@ Empates <- train %>% filter(score=="x")
 
 ## RESUMEN FINAL DE VARIABLES
 
+\
 
 ```{r}
 str(train)
@@ -282,6 +305,8 @@ summary(train)
 \
 
 ```{r}
+# tengo dudas de donde poner esto !!!
+
 train %>% select(25:35) %>%
   ggpairs(aes(color = score, alpha = .5))
 ```
@@ -290,60 +315,108 @@ train %>% select(25:35) %>%
 
 ## VARIABLES CUALITATIVAS
 
+\
+
 Las variables cualitativas de este data set son las siguientes:
 
 -   **Home Team**: Equipo local
 -   **Away Team**: Equipo visitante
 -   **Score**: Resultado (eliminado en la fase de limpiado)
 -   **Half Time Score**: Resultado al descanso (eliminado en la fase de limpiado)
-
-
+-   **score**: Resultado 1 X 2
 
 \
 
 ### RESUMEN NUMERICO
 
+\
+
+Exploramos los partidos que ha jugado cada equipo, nustra pretensión es comprobar que equipos han estado más años en primera división.
+
 ```{r}
-# Sacamos los equipos que ha jugado cada equipo (más años en primera division)
-as.data.frame(table(train$Home_Team) + table(train$Away_Team)) %>% arrange(desc(Freq))
+matches <- as.data.frame(table(train$Home_Team) + table(train$Away_Team)) %>% arrange(desc(Freq))
+kable(matches, "pipe", align = "ll")
+```
+
+\
+
+Número y proporción de victorias, derrotas y empates.
+
+```{r}
+kable(table(train$score), align = "ll")
+kable(prop.table(table(train$score))*100, align = "ll")
+```
+
+\
+
+Aquí observamos cuantos partidos han ganado, empatado y perdido cada equipo. Primero como equipo local y después como equipo visitante.
+
+```{r}
+kable(with(train, table(Home_Team, score)),align = "llll")
+kable(with(train, table(Away_Team, score)),align = "llll")
+```
+
+\
+
+Lo representamos mediante porcentajes % de victorias, derrotas y empates de cada equipo. Primero como equipo local y después como equipo visitante.
+
+```{r}
+kable(round(t((prop.table(with(train, table(score, Home_Team)), margin = 2)))*100,2), align = "llll")
+kable(round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2), align = "llll")
+
+```
+
+\
+
+### VISUALIZACION VARIABLES CUALITATIVAS
+
+\
+
+Se puede apreciar que jugar en casa es un factor importante para ganar (aproximadamente la mitad de partidos los gana el de casa).
+
+```{r}
+ggplot(train, aes(score, fill = score)) + geom_bar() + scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
-#numero y proporcion de victorias, derrotas y empates
-table(train$score)
-prop.table(table(train$score))*100
+# Esto es provisional seguro lo borro!!!
+
+library(plotrix)
+a <- train %>% group_by(score) %>% count(score)
+b <- as.double(prop.table(table(train$score))*100,2)
+datos <- a$n
+pie3D(datos, col = c("limegreen", "lightblue", "indianred"),  labels = b, explode = 0.05)
+```
+
+
+\
+
+```{r}
+ggplot(train, aes(Home_Team, color = Home_Team, fill = Home_Team)) + geom_bar() + coord_flip() + labs(x = "Equipo", y = "Nº de partidos", title = "Nº de partidos como Local")+ theme(plot.title = element_text(hjust = 0.5))
+```
+
+\
+
+```{r}
+ggplot(train, aes(Away_Team, color = Away_Team, fill = Away_Team)) + geom_bar() + coord_flip() + labs(x = "Equipo", y = "Nº de partidos", title = "Nº de partidos como Visitante")+ theme(plot.title = element_text(hjust = 0.5))
+```
+
+\
+
+```{r}
+ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "1    X    2", title = "Nº de   Victorias  -  Empates  -  Derrotas  como EQ. LOCAL")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
-# aqui vemos cuantos partidos han ganado, empatado y perdido cada equipo
-with(train, table(Home_Team, score))
-with(train, table(Away_Team, score))
+ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "1    X    2", title = "Nº de   Victorias  -  Empates  -  Derrotas  como EQ.")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
-# porcentaje de victorias, derrotas y empates de cada equipo
-round(t((prop.table(with(train, table(score, Home_Team)), margin = 2)))*100,2)
-round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2)
 
-```
+\
+\
+\
+\
 
-### VISUALIZACION
-
-```{r}
-ggplot(train, aes(score, fill = score)) +
-  geom_bar() +
-  scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) +
-  labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
-# se ve que jugar en casa es un factor importante para ganar (aprox. la mitad de partidos los gana el de casa)
-```
-
-```{r}
-ggplot(train, aes(Home_Team)) +
-  geom_bar() +
-  coord_flip() +
-  labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate")
-  
-```
 
 ```{r}
 ggplot(train,aes(score ,goals, fill = score)) +
@@ -530,9 +603,17 @@ ggplot(train,aes(score ,total_red_cards)) +
 
 10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
 
+\
+\
+\
+\
+
+
 ## VARIABLES CUANTITATIVAS
 
 ### RESUMEN NUMERICO
+
+\
 
 ```{r}
 # Posesion
@@ -618,8 +699,11 @@ summary(train$goals)
 summary(train$goals)
 ```
 
-### VISUALIZACION
+\
 
+### VISUALIZACION VARIABLES CUANTITATIVAS
+
+\
 
 ```{r}
 ggplot(train, aes(x = goals, fill = score)) + 
