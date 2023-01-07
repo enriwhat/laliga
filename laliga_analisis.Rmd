@@ -15,7 +15,7 @@ output:
 knitr::opts_chunk$set(
 	echo = TRUE,
 	include = TRUE,
-	warning = TRUE,
+	warning = FALSE,
 	message = FALSE,
 	fig.align = "center",
 	fig.height=10,
@@ -61,6 +61,7 @@ library(readr)
 library(ggplot2)
 library(cowplot)
 library(GGally)
+library(plotrix)
 ```
 
 \
@@ -103,8 +104,8 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 
 **Home Team**: Equipo local\
 **Away Team**: Equipo visitante\
-**Score**: Resultado\
-**Half Time Score**: Resultado al descanso\
+**Score**: Resultado (ejemplo 2-1)\
+**Half Time Score**: Resultado al descanso (ejemplo 1-1)\
 **Match Excitement**: Emoción del partido (subjetiva)\
 **Home Team Rating**: Nota del local (subjetiva)\
 **Away Team Rating**: Nota del visitante (subjetiva)\
@@ -288,7 +289,7 @@ Las nuevas variables creadas son las siguientes:
 -   **total_clearances**: despejes totales
 -   **total_fouls**: faltas totales
 -   **total_yellow_cards**: tarjetas amarillas totales
--   **total_yellow_cards**: segundas tarjetas amarillas totales
+-   **total_second_yellow_cards**: segundas tarjetas amarillas totales
 -   **total_red_cards**: tarjetas rojas totales
 
 \
@@ -321,8 +322,8 @@ Las variables cualitativas de este data set son las siguientes:
 
 -   **Home Team**: Equipo local
 -   **Away Team**: Equipo visitante
--   **Score**: Resultado (eliminado en la fase de limpiado)
--   **Half Time Score**: Resultado al descanso (eliminado en la fase de limpiado)
+-   **Score**: Resultado 2-1 (eliminado en la fase de limpiado)
+-   **Half Time Score**: Resultado al descanso 1-1 (eliminado en la fase de limpiado)
 -   **score**: Resultado 1 X 2
 
 \
@@ -378,18 +379,23 @@ Se puede apreciar que jugar en casa es un factor importante para ganar (aproxima
 ggplot(train, aes(score, fill = score)) + geom_bar() + scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) + labs(x = "Resultado", y = "Nº de resultados", title = "Nº de victorias Local / Visitante / Empate") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
-# Esto es provisional seguro lo borro!!!
+\
 
-library(plotrix)
+Aproximadamente el 46% de los equipos que juegan en casa ganan.
+
+```{r}
 a <- train %>% group_by(score) %>% count(score)
-b <- as.double(prop.table(table(train$score))*100,2)
+b <- round(as.double(prop.table(table(train$score))*100,2), digits = 2)
 datos <- a$n
 pie3D(datos, col = c("limegreen", "lightblue", "indianred"),  labels = b, explode = 0.05)
 ```
 
 
 \
+
+A continuación representamos mediante gráficos de barras la cantidad de partidos que juega cada equipo como local y como visitante en las 6 temporadas sometidas a estudio.
+Se puede apreciar claramente como hay un grupo de equipos que han jugado todos los partidos y por lo tanto nunca han descendido de categoría. Estos son:
+ATHLETIC, ATLETICO MADRID, BARCELONA, CELTA, EIBAR, ESPANYOL, REAL MADRID, REAL SOCIEDAD, SEVILLA FC, VALENCIA y VILLARREAL.
 
 ```{r}
 ggplot(train, aes(Home_Team, color = Home_Team, fill = Home_Team)) + geom_bar() + coord_flip() + labs(x = "Equipo", y = "Nº de partidos", title = "Nº de partidos como Local")+ theme(plot.title = element_text(hjust = 0.5))
@@ -403,211 +409,22 @@ ggplot(train, aes(Away_Team, color = Away_Team, fill = Away_Team)) + geom_bar() 
 
 \
 
+En este otro gráfico se pretende representar, por equipo, el número de victorias, derrotas y empates cuando se juega como local y cuando se juega como visitante.
+se puede apreciar como hay equipos que destacan en victorias jugando como local, ATLETICO MADRID, BARCELONA, REAL MADRID, SEVILLA FC. Además ATLETICO MADRID, BARCELONA, REAL MADRID también lo hacen como visitantes.
+
+En cambio HUESCA, ELCHE, CORDOBA, MALLORCA y ALMERIA destacan justo por lo contrario, tiene un escaso número de victorias como equipo local y como visitante.
+
 ```{r}
 ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "1    X    2", title = "Nº de   Victorias  -  Empates  -  Derrotas  como EQ. LOCAL")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
-ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "1    X    2", title = "Nº de   Victorias  -  Empates  -  Derrotas  como EQ.")+ theme(plot.title = element_text(hjust = 0.5))
-```
-
-
-\
-\
-\
 \
 
-
 ```{r}
-ggplot(train,aes(score ,goals, fill = score)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean") +
-  scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) +
-  labs(title="Media de goles por partido", x="resultado", y="goles") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# en los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate). Por tanto, un partido con más goles es más probable que no acabe en empate.
+ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "1    X    2", title = "Nº de   Victorias  -  Empates  -  Derrotas  como EQ. VISITANTE")+ theme(plot.title = element_text(hjust = 0.5))
 ```
-
-```{r}
-ggplot(train,aes(score ,Home_Team_Goals_Scored, Away_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'green') +
-  labs(title="media de goles EQ. LOCAL por partido", x="resultado", y="goles local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias (obvio pero habia que comprobarlo)
-
-#JUNTAR ESTA GRAFICA CON LA ANTERIOR (cada columna coloreada con los goles locales y visitantes)
-```
-
-```{r}
-ggplot(train,aes(score ,Away_Team_Goals_Scored)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'green') +
-  labs(title="media de goles EQ. VISITANTE por partido", x="resultado", y="goles visitante") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
-```
-
-```{r}
-ggplot(train,aes(score , total_shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'pink') +
-  labs(title="Media de disparos por partido", x="resultado", y="disparos") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# en los partidos el numero total de disparos está bastante igualado con independencia de la victoria, derrota o empate.
-```
-
-```{r}
-ggplot(train,aes(score ,Home_Team_Total_Shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'pink') +
-  labs(title="media de tiros EQ. LOCAL por partido", x="resultado", y="tiros local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
-```
-
-```{r}
-ggplot(train,aes(score ,Home_Team_On_Target_Shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'pink') +
-  labs(title="media de tiros a puerta EQ. LOCAL por partido", x="resultado", y="tiros a puerta local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Sin embargo el número de tiros a puerta si influye (cuantos más tiros a puerta, más cerca de la victoria)
-```
-
-
-```{r}
-ggplot(train,aes(score ,Away_Team_Total_Shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'pink') +
-  labs(title="media de tiros EQ. VISITANTE por partido", x="resultado", y="tiros local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Igual que para el equipo local, el número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
-```
-
-```{r}
-ggplot(train,aes(score ,Away_Team_On_Target_Shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'pink') +
-  labs(title="media de tiros a puerta EQ. VISITANTE por partido", x="resultado", y="tiros a puerta local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# Sin embargo  volvemos a ver que el número de tiros a puerta si influye (cuantos más tiros a puerta, más cerca de la victoria)
-```
-
-```{r}
-ggplot(train,aes(score ,`Home_Team_Possession_%`)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'orange') +
-  labs(title="Gráfica Pep", x="resultado", y="posesion local") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# No parece influir mucho la posesión
-```
-
-```{r}
-ggplot(train,aes(score ,`Away_Team_Possession_%`)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'orange') +
-  labs(title="Gráfica Pep", x="resultado", y="posesion visitante") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El equipo local suele tener más posesion (>50%) independientemente del resultado
-```
-
-```{r}
-ggplot(train,aes(score ,total_blocked_shots)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = "grey") +
-  labs(title="Media de tiros bloqueados por partido", x="resultado", y="tiros bloqueados") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de disparos bloqueados no parece un factor determinante en la victoria
-```
-
-```{r}
-ggplot(train,aes(score ,total_aerials_won)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = "brown") +
-  labs(title="Media de duelos aereos por partido", x="resultado", y="duelos aereos") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de duelos aereos no parece un factor determinante en la victoria
-```
-
-```{r}
-ggplot(train,aes(score ,total_corners)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'blue') +
-  labs(title="Media de corners por partido", x="resultado", y="corners") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de corners no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de corners está muy repartido
-```
-
-```{r}
-ggplot(train,aes(score ,total_throw_ins)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightblue') +
-  labs(title="Media de centros por partido", x="resultado", y="centros") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de centros no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de centros está muy repartido
-```
-
-```{r}
-ggplot(train,aes(score ,total_clearances)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightgreen') +
-  labs(title="Media de despejes por partido", x="resultado", y="despejes") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de despejes no parece un factor determinante en la victoria incluso parece que a mayor número de despejes medios el partido parece más probable que acabe en empate
-```
-
-```{r}
-ggplot(train,aes(score ,total_fouls)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'lightyellow') +
-  labs(title="Media de faltas por partido", x="resultado", y="faltas") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de faltas no parece un factor determinante.
-```
-
-```{r}
-ggplot(train,aes(score ,total_yellow_cards)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'yellow') +
-  labs(title="Media de amarillas por partido", x="resultado", y="amarillas") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de tarjetas amarillas no parece un factor determinante.
-```
-
-```{r}
-ggplot(train,aes(score ,total_red_cards)) +
-  geom_bar(position = "dodge", stat = "summary", fun = "mean",
-           color = 'black', fill = 'red') +
-  labs(title="Media de rojas por partido", x="resultado", y="rojas") +
-  theme(plot.title=element_text(hjust = 0.5))
-
-# El numero de tarjetas rojas no parece un factor determinante.
-```
-
-10 equipos(Athletic, Atletico, Barcelona, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) han estado todas las temporadas en primera.\
 
 \
-\
-\
-\
-
 
 ## VARIABLES CUANTITATIVAS
 
@@ -615,87 +432,149 @@ ggplot(train,aes(score ,total_red_cards)) +
 
 \
 
+POSESIÓN
+
 ```{r}
-# Posesion
 summary(train$`Home_Team_Possession_%`)
 summary(train$`Away_Team_Possession_%`)
 ```
 
+\
+
+TIROS
+
+No puerta
 ```{r}
-# Tiros
 summary(train$Home_Team_Off_Target_Shots)
 summary(train$Away_Team_Off_Target_Shots)
+summary(train$total_off_target_shots)
+```
 
+\
+
+A puerta
+```{r}
 summary(train$Home_Team_On_Target_Shots)
 summary(train$Away_Team_On_Target_Shots)
+summary(train$total_on_target_shots)
+```
 
+\
+
+Total
+```{r}
 summary(train$Home_Team_Total_Shots)
 summary(train$Away_Team_Total_Shots)
+summary(train$total_shots)
 ```
 
+\
+
+BLOQUEOS
+
 ```{r}
-# Bloqueos
 summary(train$Home_Team_Blocked_Shots)
 summary(train$Away_Team_Blocked_Shots)
+summary(train$total_blocked_shots)
 ```
 
+\
+
+CORNERS
+
 ```{r}
-# Corners
 summary(train$Home_Team_Corners)
 summary(train$Away_Team_Corners)
+summary(train$total_corners)
 ```
 
+\
+
+CENTROS
+
 ```{r}
-# Centros
 summary(train$Home_Team_Throw_Ins)
 summary(train$Away_Team_Throw_Ins)
+summary(train$total_throw_ins)
 ```
 
+\
+
+PASES
+
 ```{r}
-# Pases
 summary(train$`Home_Team_Pass_Success_%`)
 summary(train$`Away_Team_Pass_Success_%`)
+summary(train$total_pass_success)
 ```
 
+\
+
+BALONES AEREOS
+
 ```{r}
-# Balones aereos
 summary(train$Home_Team_Aerials_Won)
 summary(train$Away_Team_Aerials_Won)
+summary(train$total_aerials_won)
 ```
 
+\
+
+DESPEJES
+
 ```{r}
-# Despejes
 summary(train$Home_Team_Clearances)
 summary(train$Away_Team_Clearances)
+summary(train$total_clearances)
 ```
 
+\
+
+FALTAS
+
 ```{r}
-# Faltas
 summary(train$Home_Team_Fouls)
 summary(train$Away_Team_Fouls)
+summary(train$total_fouls)
 ```
 
+\
+
+TARJETAS AMARILLAS
+
 ```{r}
-# Amarillas
 summary(train$Home_Team_Yellow_Cards)
 summary(train$Away_Team_Yellow_Cards)
+summary(train$total_yellow_cards)
 ```
 
+\
+
+SEGUNDAS TARJETAS AMARILLAS
+
 ```{r}
-# Segundas amarillas
 summary(train$Home_Team_Second_Yellow_Cards)
 summary(train$Away_Team_Second_Yellow_Cards)
+summary(train$total_second_yellow_cards)
 ```
 
+\
+
+TARJETAS ROJAS
+
 ```{r}
-# Rojas
 summary(train$Home_Team_Red_Cards)
 summary(train$Away_Team_Red_Cards)
+summary(train$total_red_cards)
 ```
 
+\
+
+GOLES
+
 ```{r}
-# Goles
-summary(train$goals)
+summary(train$Home_Team_Goals_Scored)
+summary(train$Away_Team_Goals_Scored)
 summary(train$goals)
 ```
 
@@ -705,10 +584,405 @@ summary(train$goals)
 
 \
 
+POSESIÓN
+
+Histograma con curva de densidad sobre la posesión del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Possession_%`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'orange') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica % Posesión EQ. LOCAL", x="% de Posesión", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de posesión del equipo local respecto al resultado  1  X  2.
+
+```{r}
+ggplot(train,aes(score ,`Home_Team_Possession_%`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'orange') + labs(title="Gráfica Pep", x="resultado", y="posesión local") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre la posesión del equipo visitante
+
+```{r}
+ggplot(train, aes(`Away_Team_Possession_%`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'orange') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica % Posesión EQ. VISITANTE", x="% de Posesión", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de posesión del equipo visitante respecto al resultado  1  X  2.
+
+```{r}
+ggplot(train,aes(score ,`Away_Team_Possession_%`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'orange') + labs(title="Gráfica Pep", x="resultado", y="posesión visitante") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+TIROS
+
+TOTALES
+
+Histograma con curva de densidad sobre el total de tiros por partido.
+
+```{r}
+ggplot(train, aes(`total_shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales por partido", x="tiros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales respecto al resultado  1  X  2. 
+En los partidos el número total de disparos está bastante igualado con independencia de la victoria, derrota o empate.
+
+```{r}
+ggplot(train,aes(score , total_shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="Media de disparos por partido", x="resultado", y="disparos") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros del equipo local por partido.
+
+```{r}
+ggplot(train, aes(`Home_Team_Total_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales por partido EQ. LOCAL", x="tiros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales del equipo local respecto al resultado  1  X  2. 
+El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
+
+```{r}
+ggplot(train,aes(score ,Home_Team_Total_Shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="media de tiros EQ. LOCAL por partido", x="resultado", y="tiros local") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros del equipo visitante por partido.
+
+```{r}
+ggplot(train, aes(`Away_Team_Total_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales por partido EQ. VISITANTE", x="tiros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales del equipo local respecto al resultado  1  X  2. 
+El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
+
+```{r}
+ggplot(train,aes(score ,Away_Team_Total_Shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="media de tiros EQ. VISITANTE por partido", x="resultado", y="tiros local") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+A PUERTA
+
+Histograma con curva de densidad sobre el total de tiros por partido.
+
+```{r}
+ggplot(train, aes(`total_on_target_shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales a puerta por partido", x="tiros a puerta", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales a puerta respecto al resultado  1  X  2. 
+
+```{r}
+ggplot(train,aes(score , total_on_target_shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="Media de disparos a puerta por partido", x="resultado", y="disparos a puerta") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros del equipo local por partido.
+
+```{r}
+ggplot(train, aes(`Home_Team_On_Target_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales a puerta por partido EQ. LOCAL", x="tiros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales del equipo local respecto al resultado  1  X  2. 
+
+```{r}
+ggplot(train,aes(score ,`Home_Team_On_Target_Shots`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="media de tiros EQ. LOCAL por partido", x="resultado", y="tiros local a puerta") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros del equipo visitante por partido.
+
+```{r}
+ggplot(train, aes(`Away_Team_On_Target_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'pink') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros totales a puerta por partido EQ. VISITANTE", x="tiros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Porcentaje de tiros totales del equipo local respecto al resultado  1  X  2. 
+El número de tiros no influye mucho en el resultado (gane, pierda o empate suelen ser similares)
+
+```{r}
+ggplot(train,aes(score ,`Away_Team_On_Target_Shots`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'pink') + labs(title="media de tiros EQ. VISITANTE por partido", x="resultado", y="tiros local") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Por motivos de simplicidad en el análisis NO hacemos el mismo ejercicio para los tiros que no van a puerta.
+
+\
+
+BLOQUEOS
+
+Histograma con curva de densidad sobre el total de tiros bloqueados por partido.
+
+```{r}
+ggplot(train, aes(`total_blocked_shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'grey') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros bloqueados totales", x="tiros bloqueados", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Bloqueos totales respecto al resultado  1  X  2.
+
+```{r}
+ggplot(train,aes(score ,total_blocked_shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = "grey") + labs(title="Media de tiros bloqueados por partido", x="resultado", y="tiros bloqueados") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros bloqueados por partido del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Blocked_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'grey') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros bloqueados totales EQ. LOCAL", x="tiros bloqueados eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tiros bloqueados por partido del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Blocked_Shots`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'grey') + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tiros bloqueados totales EQ. VISITANTE", x="tiros bloqueados eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+CORNERS
+
+Histograma con curva de densidad sobre el total de corners por partido.
+
+```{r}
+ggplot(train, aes(`total_corners`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'blue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica corners totales", x="corners", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Corners totales respecto al resultado  1  X  2. El numero de corners no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de corners está muy repartido
+
+```{r}
+ggplot(train,aes(score ,total_corners)) +  geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'blue') + labs(title="Media de corners por partido", x="resultado", y="corners") +  theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de corners por partido del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Corners`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'blue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica corners totales EQ. LOCAL", x="tiros bloqueados eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de corners por partido del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Corners`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'blue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica corners totales EQ. VISITANTE", x="tiros bloqueados eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+CENTROS
+
+Histograma con curva de densidad sobre el total de centros por partido.
+
+```{r}
+ggplot(train, aes(`total_throw_ins`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'lightblue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica centros totales", x="centros", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Centros totales respecto al resultado  1  X  2. El numero de centros no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de centros está muy repartido.
+
+```{r}
+ggplot(train,aes(score ,total_throw_ins)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'lightblue') + labs(title="Media de centros por partido", x="resultado", y="centros") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Throw_Ins`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'lightblue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica centros totales EQ. LOCAL", x="centros eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Throw_Ins`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = 'lightblue') + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica centros totales EQ. VISITANTE", x="centros eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+PASES
+
+Histograma con curva de densidad sobre el total de pases exitosos por partido.
+
+```{r}
+ggplot(train, aes(`total_pass_success`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "white") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica pases exitosos totales", x="pases exitosos", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Pases totales respecto al resultado  1  X  2. El numero de centros no parece un factor determinante en la victoria se puede observar como con independencia del ganadar el numero de centros está muy repartido.
+
+```{r}
+ggplot(train,aes(score ,`total_pass_success`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = "white") + labs(title="Media de pases exitosos por partido", x="resultado", y="pases exitosos") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Pass_Success_%`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "white") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica pases exitosos totales EQ. LOCAL", x="pases exitosos eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Pass_Success_%`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "white") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica pases exitosos totales EQ. VISITANTE", x="pases exitosos eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+BALONES AEREOS
+
+Histograma con curva de densidad sobre el total de balones aéreos ganadoss por partido.
+
+```{r}
+ggplot(train, aes(`total_aerials_won`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "brown") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica balones aéreos ganados totales", x="balones aéreos ganados", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Balones aéreos ganados totales respecto al resultado  1  X  2. El número de duelos aereos no parece un factor determinante en la victoria.
+
+```{r}
+ggplot(train,aes(score ,total_aerials_won)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = "brown") + labs(title="Media de balones aéreos ganados por partido", x="resultado", y="duelos aereos") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Aerials_Won`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "brown") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica balones aéreos ganados totales EQ. LOCAL", x="pases exitosos eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de centros por partido del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Aerials_Won`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "brown") + geom_density(alpha=.3, fill = "yellow") + labs(title="Gráfica balones aéreos ganados totales EQ. VISITANTE", x="pases exitosos eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+DESPEJES
+
+Histograma con curva de densidad sobre el total de despejes por partido.
+
+```{r}
+ggplot(train, aes(`total_clearances`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightgreen") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica despejes totales", x="despejes", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Despejes totales respecto al resultado  1  X  2. El número de despejes no parece un factor determinante en la victoria incluso parece que a mayor número de despejes medios el partido parece más probable que acabe en empate
+
+```{r}
+ggplot(train,aes(score ,total_clearances)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'lightgreen') + labs(title="Media de despejes por partido", x="resultado", y="despejes") +  theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de despejes del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Clearances`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightgreen") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica despejes totales EQ. LOCAL", x="despejes eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de despejes del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Clearances`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightgreen") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica despejes totales EQ. VISITANTE", x="despejes eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+FALTAS
+
+Histograma con curva de densidad sobre el total de faltas por partido.
+
+```{r}
+ggplot(train, aes(`total_fouls`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightyellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica faltas totales", x="faltas", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Faltas totales respecto al resultado  1  X  2. El número de faltas no parece un factor determinante.
+
+```{r}
+ggplot(train,aes(score ,total_fouls)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'lightyellow') + labs(title="Media de faltas por partido", x="resultado", y="faltas") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de faltas del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Fouls`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightyellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica faltas totales EQ. LOCAL", x="faltas eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total faltas del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Fouls`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "lightyellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica faltas totales EQ. VISITANTE", x="faltas eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+TARJETAS AMARILLAS
+
+Histograma con curva de densidad sobre el total de tarjetas amarillas por partido.
+
+```{r}
+ggplot(train, aes(`total_yellow_cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "yellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tarjetas amarillas totales", x="tarjetas amarillas", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Tarjetas amarillas totales respecto al resultado  1  X  2. El numero de tarjetas amarillas no parece un factor determinante.
+
+```{r}
+ggplot(train,aes(score ,total_yellow_cards)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'yellow') + labs(title="Media de amarillas por partido", x="resultado", y="amarillas") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tarjetas amarillas del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Yellow_Cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "yellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tarjetas amarillas totales EQ. LOCAL", x="tarjetas amarillas eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total tarjetas amarillas del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Yellow_Cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "yellow") + geom_density(alpha=.3, fill = "blue") + labs(title="Gráfica tarjetas amarillas totales EQ. VISITANTE", x="tarjetas amarillas eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+TARJETAS ROJAS
+
+Histograma con curva de densidad sobre el total de tarjetas rojas por partido.
+
+```{r}
+ggplot(train, aes(`total_red_cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "red") + geom_density(alpha=.3, fill = "green") + labs(title="Gráfica tarjetas rojas totales", x="tarjetas rojas", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Rojas totales respecto al resultado  1  X  2. El numero de tarjetas rojas no parece un factor determinante.
+
+```{r}
+ggplot(train,aes(score ,total_red_cards)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'red') + labs(title="Media de rojas por partido", x="resultado", y="rojas") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total de tarjetas rojas del equipo local.
+
+```{r}
+ggplot(train, aes(`Home_Team_Red_Cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "red") + geom_density(alpha=.3, fill = "green") + labs(title="Gráfica tarjetas rojas totales EQ. LOCAL", x="tarjetas rojas eq. local", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Histograma con curva de densidad sobre el total tarjetas rojas del equipo visitante.
+
+```{r}
+ggplot(train, aes(`Away_Team_Red_Cards`)) + geom_histogram(aes(y=..density..), position = "dodge", fun = "sum",color = 'black', fill = "red") + geom_density(alpha=.3, fill = "green") + labs(title="Gráfica tarjetas rojas totales EQ. VISITANTE", x="tarjetas rojas eq. visitante", y="Cantidad") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+\
+
+GOLES
+
+En los partidos con victorias locales hay más goles de media que en los que gana el visitante (y bastante más que en los que hay empate). Por tanto, un partido con más goles es más probable que no acabe en empate.
+
+```{r}
+ggplot(train,aes(score ,goals, fill = score)) + geom_bar(position = "dodge", stat = "summary", fun = "mean") + scale_fill_manual(values = c("limegreen", "lightblue", "indianred")) + labs(title="Media de goles por partido", x="resultado", y="goles") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Cuando el equipo local gana, mayor es su media de goles. Es decir, a mas goles, mas victorias. 
+#JUNTAR ESTA GRAFICA CON LA ANTERIOR (cada columna coloreada con los goles locales y visitantes)
+
+```{r}
+ggplot(train,aes(score ,Home_Team_Goals_Scored, Away_Team_Goals_Scored)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = 'green') + labs(title="media de goles EQ. LOCAL por partido", x="resultado", y="goles local") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Cuando el equipo local pierde, mayor es la media de goles del visitante. Es decir, a mas goles encajados, mas derrotas (obvio pero habia que comprobarlo)
+
+```{r}
+ggplot(train,aes(score ,Away_Team_Goals_Scored)) +
+  geom_bar(position = "dodge", stat = "summary", fun = "mean",
+           color = 'black', fill = 'green') +
+  labs(title="media de goles EQ. VISITANTE por partido", x="resultado", y="goles visitante") +
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+
+
 ```{r}
 ggplot(train, aes(x = goals, fill = score)) + 
   geom_dotplot(binwidth = 0.1)
 ```
+
+
 
 ```{r}
 ggplot(train, aes(x = Home_Team_Goals_Scored)) +
@@ -721,21 +995,15 @@ ggplot(train, aes(x = Away_Team_Goals_Scored)) +
 ```
 
 
-```{r}
-ggplot(train, aes(x = Home_Team_Clearances)) +
-  geom_histogram(fill="white", colour="black")
-
-ggplot(train, aes(x = Home_Team_Fouls)) +
-  geom_histogram(fill="white", colour="black") 
-```
-
-```{r}
-ggplot(train, aes(Home_Team_Goals_Scored)) +
-  geom_boxplot()
-
-ggplot(train, aes(Away_Team_Goals_Scored)) +
-  geom_boxplot()
-```
+\
+\
+\
+\
+\
+\
+\
+\
+\
 
 
 ```{r}
