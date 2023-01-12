@@ -1,5 +1,5 @@
 ---
-title: "datos_liga"
+title: "DATASET LA LIGA"
 author: "Enrique Roa, Miguel Ocón, Sergio Fernández"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
@@ -30,7 +30,7 @@ knitr::opts_chunk$set(
 
 \
 
-En este proyecto vamos a estudiar el dataset llamado "combined_data_laliga.csv" donde se encuentran todos los partidos de la temporada 2014 hasta la temporada 2020, ambas incluidas, con una recopilación de los principales eventos que ocurren en un partido, goles, tiros a puerta, faltas, tarjetas...
+En este proyecto vamos a estudiar el dataset llamado "combined_data_laliga.csv" ([kaggle - La Liga Match Data](https://www.kaggle.com/datasets/sanjeetsinghnaik/la-liga-match-data/code)) donde se encuentran todos los partidos de la temporada 2014 hasta la temporada 2020, ambas incluidas, con una recopilación de los principales eventos que ocurren en un partido, goles, tiros a puerta, faltas, tarjetas...
 
 \
 
@@ -62,6 +62,13 @@ library(ggplot2)
 library(cowplot)
 library(GGally)
 library(plotrix)
+library(ggcorrplot)
+```
+
+\
+
+```{r echo=FALSE}
+paste("Versión de R:", R.Version()$version.string)
 ```
 
 \
@@ -80,7 +87,15 @@ laliga <- read_csv("combined_data_laliga.csv")
 
 \
 
-Exploración inicial de datos a través de estadísticos principales
+Visualización de los primeros registros:
+
+```{r}
+head(laliga)
+```
+
+\
+
+Exploración inicial de datos y su estructura a través de estadísticos principales:
 
 ```{r}
 str(laliga)
@@ -149,6 +164,26 @@ El dataframe contiene todos los partidos de la liga española de 7 temporadas (d
 
 \
 
+## GENERACION DATOS FALTANTES
+
+\
+
+Debido a la ausencia de datos faltantes en nuestro dataset, por motivos unicamente teóricos, generamos de manera automática unos datos faltantes que posteriormeente limpiaremos.
+
+Generación del dato faltante.
+
+```{r}
+
+```
+
+Resumen con datos faltantes.
+
+```{r}
+
+```
+
+\
+
 ## LIMPIEZA DE DATOS
 
 \
@@ -177,7 +212,7 @@ laliga$`Away_Team_Goals_Conceeded` <- NULL
 
 \
 
-Creación de campos que interesa estudiar más adelante
+Creación de campos que interesa estudiar más adelante.
 
 ```{r}
 laliga <- mutate(laliga, score = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, "1",
@@ -242,6 +277,7 @@ Dividimos el dataset original en train y test. Decidimos que train contenga 6 de
 test <- filter(laliga, year==2020)
 train <- filter(laliga, year<2020)
 
+#Los csv generados tras la división train-test son los siguientes:
 #write.csv(test,"test/test_laliga.csv")
 #write.csv(train,"train/train_laliga.csv")
 ```
@@ -1037,6 +1073,15 @@ ggplot(rojas_year_jorn,  aes(x = jornada, y = total_red_cards)) + geom_point() +
 \
 
 ## MULTIVARIANTE
+
+\
+
+```{r}
+num_data <- train %>% select("goals", "jornada", "total_fouls", "total_yellow_cards", "total_red_cards", "total_shots","total_blocked_shots", "total_corners", "total_throw_ins", "total_pass_success", "total_aerials_won", "total_clearances")
+
+ggcorrplot(cor(num_data),type = "lower", lab=TRUE)
+```
+
 
 \
 
