@@ -300,23 +300,23 @@ round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2) %
 ```
 
 \
-También se muestra la visualización de estos datos para una comprensión mas intuitiva:
+También se muestra la visualización de estos datos para una comprensión más intuitiva:
 
 ```{r}
-ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local(victoria = 1)")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
-ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo visitante(victoria = 2)")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Es interesante ver como, tras este análisis de las variables cualitativas ya se pueden identificar los equipos punteros de la liga.
+Es interesante ver, como tras este análisis de las variables cualitativas ya se pueden identificar los equipos punteros de la liga.
 
-No sólo hay 11 equipos que se han mantenido en primera todos los años (Athletic, Atlético, Barcelona, Celta, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) si no que algunos de ellos cosechan una mayor proporción de victorias.
+No sólo hay 11 equipos que se han mantenido en primera todos los años (Athletic, Atlético, Barcelona, Celta, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) sino que algunos de ellos cosechan una mayor proporción de victorias.
 
-En este grupo destacan sobre el resto los tres "grandes" de la actualidad (Real Madrid, Barcelona y Atlético), ya que aunque en partidos como local hay alguno equipo (como el Sevilla) que se les acerca en victorias, es en los partidos como visitante donde estos tres destacan por encima del resto (especialmente Madrid y Barcelona).
+En este grupo destacan sobre el resto los tres "grandes" de la actualidad (Real Madrid, Barcelona y Atlético), ya que, aunque en partidos como local hay algún equipo (Sevilla) que se les acerca en victorias, es en los partidos como visitante donde estos tres destacan por encima del resto (especialmente Madrid y Barcelona).
 
-Lo cual tiene especial relevancia si comparamos estos datos con los del inicio, en los que se veía que jugar en casa era un factor determinante para ganar un partido.
+Esto tiene especial relevancia si comparamos estos datos con los del inicio, en los que se veía que jugar en casa era un factor determinante para ganar un partido.
 
 Por lo tanto, un buen indicio para saber cómo de bueno es un equipo es ver su proporción de victorias como visitante.
 
@@ -371,7 +371,7 @@ boxplot(train$`Home_Team_Pass_Success_%`, train$`Away_Team_Pass_Success_%`, main
 axis(1, at = 1:2, labels = c("Local", "Visitante"))
 ```
 
-En términos de posesión y porcentaje de pases acertados (dos variables lógicamente relacionadas), se observa como ambas distribuciones son prácticamente calcadas, con valores ligeramente más altos para el equipo local peri sin diferencias significativas.
+En términos de posesión y porcentaje de pases acertados (dos variables lógicamente relacionadas), se observa como ambas distribuciones son prácticamente calcadas, con valores ligeramente más altos para el equipo local pero sin diferencias significativas.
 
 ```{r}
 # Tiros
@@ -644,7 +644,7 @@ axis(1, at = 1:2, labels = c("Local", "Visitante"))
 
 Respecto a las faltas, pese a tener una distribución muy similar, incluso el equipo visitante con una media por partido inferior, es este último el que más tarjetas recibe. Probablemente se deba (recordando que el equipo local crea más acciones en campo contrario) a que dichas faltas cortan jugadas potencialmente más peligrosas.
 
-Aunque seguramente influirán otros factores más difíciles de medir como la presión que ejerza el público local sobre el árbitro a la hora de tomar decisiones.
+Aunque seguramente influirán otros factores más difíciles de medir, como la presión que ejerza el público local sobre el árbitro a la hora de tomar decisiones.
 
 ```{r}
 # Goles
