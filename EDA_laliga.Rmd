@@ -36,7 +36,7 @@ Para adentrarnos un poco en este terreno hemos seleccionado un dataset ([kaggle 
 
 Nuestro primer propósito será analizar los datos en profundidad para ver cómo se distribuyen los diferentes eventos en un partido de fútbol, para posteriormente determinar cuáles son aquellos que tienen mayor influencia en el resultado final.
 
-En ultim instancia, tras conocer aquellas variables que influyen en mayor medida en la victoria de un equipo, se intentará comprobar si es posible predecir el desenlace de un partido futuro.
+En ultima instancia, tras conocer aquellas variables que influyen en mayor medida en la victoria de un equipo, se intentará comprobar si es posible predecir el desenlace de un partido futuro.
 
 ```{r}
 library(dplyr)
@@ -76,7 +76,7 @@ summary(laliga)
 str(laliga) 
 ```
 
-El dataset contiene **2660 observaciones** (correspondientes a un partido cada una) y **40 variables** (de las cuales son **4 cualitativas** y **36 cuantitativas** discretas). Las mayoría de estas variables cuantitativas (34) son acciones del partido correspondientes a cada equipo (local y visitante). 
+El dataset contiene **2660 observaciones** (correspondientes a un partido cada una) y **40 variables** (de las cuales son **4 cualitativas** y **36 cuantitativas** discretas). Las mayoría de estas variables cuantitativas (34) son las acciones del partido duplicadas, correspondientes a cada equipo (local y visitante). 
 
 Respecto a los datos faltantes (NA), el dataset original no tenía ninguno. Sin embargo se han introducido algunos de forma aleatoria para su posterior tratamiento.
 
@@ -178,7 +178,7 @@ laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
 
 ## Tratamiento de datos faltantes
 
-Si alguno de los NA hubiera aparecido en las variables categóricas (equipos y resultados), la elección para su tratamiento hubiera sido acudir a cualquier fuente (google, por ejemplo) en busca del partido concreto para obtenerlas, ya que sabiendo la jornada y la temporada del partido apenas llevaría unos segundos encontrarlas y evitaríamos eliminar estas filas.
+Si alguno de los NA hubiera aparecido en las variables categóricas (equipos y resultados), la elección para su tratamiento hubiera sido acudir a cualquier fuente (google, por ejemplo) en busca del partido concreto para obtenerlas, ya que sabiendo la jornada y la temporada del partido apenas llevaría unos segundos encontrarlas y evitaríamos eliminar esas filas.
 
 Sin embargo en este caso solo aparecen en las siguientes variables numéricas:
 
@@ -193,26 +193,26 @@ Sin embargo en este caso solo aparecen en las siguientes variables numéricas:
   - Away Team Pass Success (2)
   - Away Team Aerials Won (1)
   
-Siendo tan pocos respecto al tamaño del dataset y comprendiendo que es preferible mantener estas filas (ya que los campos aparentemente más relevantes como los goles o los equipos sí aparecen), se ha optado por sustituir estos NA por el número entero más cercano a la media calculada con el resto de valores de esa variable, ya qe todas están expresadas en enteros.
+Siendo tan pocos respecto al tamaño del dataset y comprendiendo que es preferible mantener estas filas (ya que los campos aparentemente más relevantes como los goles o los equipos sí aparecen), se ha optado por sustituir estos NA por la mediana del resto de valores de esa variable.
 
-Sabiendo que la imputación de datos faltantes con medidas de centralidad (como es la media que hemos utilizado) está desaconsejada porque tiene a introducir sesgo en los estimadores, en nuestro caso se ha considerado que, dado el escaso número de NA, no compensaba utilizar un método de imputación más complejo, como una regresión.
+Sabiendo que la imputación de datos faltantes con medidas de centralidad (como es la mediana que hemos utilizado) está desaconsejada porque tiene a introducir sesgo en los estimadores, en nuestro caso se ha considerado que, dado el escaso número de NA, no compensaba utilizar un método de imputación más complejo, como una regresión.
 
 ```{r}
-laliga$`Home_Team_Possession_%`[is.na(laliga$`Home_Team_Possession_%`)] <- round(mean(laliga$`Home_Team_Possession_%`[!is.na(laliga$`Home_Team_Possession_%`)]), 0)
+laliga$`Home_Team_Possession_%`[is.na(laliga$`Home_Team_Possession_%`)] <- median(laliga$`Home_Team_Possession_%`[!is.na(laliga$`Home_Team_Possession_%`)])
 
-laliga$Home_Team_On_Target_Shots[is.na(laliga$Home_Team_On_Target_Shots)] <- round(mean(laliga$Home_Team_On_Target_Shots[!is.na(laliga$Home_Team_On_Target_Shots)]), 0)
+laliga$Home_Team_On_Target_Shots[is.na(laliga$Home_Team_On_Target_Shots)] <- median(laliga$Home_Team_On_Target_Shots[!is.na(laliga$Home_Team_On_Target_Shots)])
 
-laliga$Home_Team_Clearances[is.na(laliga$Home_Team_Clearances)] <- round(mean(laliga$Home_Team_Clearances[!is.na(laliga$Home_Team_Clearances)]), 0)
+laliga$Home_Team_Clearances[is.na(laliga$Home_Team_Clearances)] <- median(laliga$Home_Team_Clearances[!is.na(laliga$Home_Team_Clearances)])
 
-laliga$Home_Team_Second_Yellow_Cards[is.na(laliga$Home_Team_Second_Yellow_Cards)] <- round(mean(laliga$Home_Team_Second_Yellow_Cards[!is.na(laliga$Home_Team_Second_Yellow_Cards)]), 0)
+laliga$Home_Team_Second_Yellow_Cards[is.na(laliga$Home_Team_Second_Yellow_Cards)] <- median(laliga$Home_Team_Second_Yellow_Cards[!is.na(laliga$Home_Team_Second_Yellow_Cards)])
 
-laliga$Away_Team_Off_Target_Shots[is.na(laliga$Away_Team_Off_Target_Shots)] <- round(mean(laliga$Away_Team_Off_Target_Shots[!is.na(laliga$Away_Team_Off_Target_Shots)]), 0)
+laliga$Away_Team_Off_Target_Shots[is.na(laliga$Away_Team_Off_Target_Shots)] <- median(laliga$Away_Team_Off_Target_Shots[!is.na(laliga$Away_Team_Off_Target_Shots)])
 
-laliga$Away_Team_Blocked_Shots[is.na(laliga$Away_Team_Blocked_Shots)] <- round(mean(laliga$Away_Team_Blocked_Shots[!is.na(laliga$Away_Team_Blocked_Shots)]), 0)
+laliga$Away_Team_Blocked_Shots[is.na(laliga$Away_Team_Blocked_Shots)] <- median(laliga$Away_Team_Blocked_Shots[!is.na(laliga$Away_Team_Blocked_Shots)])
 
-laliga$Away_Team_Corners[is.na(laliga$Away_Team_Corners)] <- round(mean(laliga$Away_Team_Corners[!is.na(laliga$Away_Team_Corners)]), 0)
+laliga$Away_Team_Corners[is.na(laliga$Away_Team_Corners)] <- median(laliga$Away_Team_Corners[!is.na(laliga$Away_Team_Corners)])
 
-laliga$Away_Team_Throw_Ins[is.na(laliga$Away_Team_Throw_Ins)] <- round(mean(laliga$Away_Team_Throw_Ins[!is.na(laliga$Away_Team_Throw_Ins)]), 0)
+laliga$Away_Team_Throw_Ins[is.na(laliga$Away_Team_Throw_Ins)] <- median(laliga$Away_Team_Throw_Ins[!is.na(laliga$Away_Team_Throw_Ins)])
 
 laliga$`Away_Team_Pass_Success_%`[is.na(laliga$`Away_Team_Pass_Success_%`)] <- round(mean(laliga$`Away_Team_Pass_Success_%`[!is.na(laliga$`Away_Team_Pass_Success_%`)]), 0)
 
