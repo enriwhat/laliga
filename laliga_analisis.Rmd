@@ -274,8 +274,8 @@ laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
 Dividimos el dataset original en train y test. Decidimos que train contenga 6 de las 7 temporadas para utilizar los partidos de la 7ª (temp. 2020) en la fase de test.
 
 ```{r}
-test <- filter(laliga, year==2020)
-train <- filter(laliga, year<2020)
+test <- filter(laliga, year>2018)
+train <- filter(laliga, year<=2018)
 
 #Los csv generados tras la división train-test son los siguientes:
 #write.csv(test,"test/test_laliga.csv")
@@ -1076,12 +1076,33 @@ ggplot(rojas_year_jorn,  aes(x = jornada, y = total_red_cards)) + geom_point() +
 
 \
 
+Primeramente realizamos un estudio de correlaciones mediante una matriz de las variables originales del dataset. Observamos lo siguiente:
+
+-   Tanto para equipos locales como visitantes hay alta correlación lineal entre el número total de disparos, a puerta y fuera.
+-   Igualmente también se muestran correlaciones elevadas entre el porcentaje % de éxito en pase y el % de posesión cuando se trata del mismo equipo.
+-   Correlaciones inversas entre porcentajes de posesión de ambos equipos cuando se trata una variable de cada uno.
+
+```{r}
+num_data_orig <- train[4:28]
+ggcorrplot(cor(num_data_orig))
+```
+
+\
+
+A posteriori hacemos el mismo ejercicio con las variables en agregado. Observamos lo siguiente:
+
+-   Correlaciones positivas entre tiros y bloqueos, faltas y tarjetas amarillas, goles y disparos totales, corners y bloqueos de disparos, centros y despejes y despejes contra duelos aereos.
+-   Observamos correlaciones negativas entre pases y duelo aéreos, pases y centros y disparos y centros.
+
 ```{r}
 num_data <- train %>% select("goals", "jornada", "total_fouls", "total_yellow_cards", "total_red_cards", "total_shots","total_blocked_shots", "total_corners", "total_throw_ins", "total_pass_success", "total_aerials_won", "total_clearances")
 
 ggcorrplot(cor(num_data),type = "lower", lab=TRUE)
 ```
 
+\
+
+GRAFICOS DE CORRELACIONES
 
 \
 
@@ -1258,64 +1279,103 @@ prop.table(table(Derrotas_casa$Home_Team_Blocked_Shots > Derrotas_casa$Away_Team
 
 \
 
-```{r}
-# esta la borraría y me centraría en las principales, en las totales. Las que va a continuación.
+Una de las variables más influyentes es jugar en casa vamos a empezar haciendo un modelo de regresión lineal multiple incluyendo todas las variables para ver cuales son mas significativas respecto de un equipo que juega en casa:
 
+```{r}
 lm_fit <- lm(Home_Team_Goals_Scored~.-Home_Team, data=train)
 summary(lm_fit)
-
-#regfit_fwd <- leaps::regsubsets(Home_Team_Goals_Scored~., train, method="forward")
-#for (metric in c("r2", "adjr2", "Cp", "bic")){plot(regfit_fwd, scale=metric)}
 ```
 
-Variables más influyentes en los goles marcados: Centros, despejes, tarjetas rojas,\
+Variables más influyentes en los goles marcados: Centros, despejes, tarjetas rojas,
 
-Regresión con todas las variables
+\
+
+**Regresión con todas las variables totales:**
+
+\
+
+**TOTAL GOLES**
 
 ```{r}
 lm_goles <- lm(goals~., data = train)
 summary(lm_goles)
 ```
 
+\
+
+**TOTAL DISPAROS**
+
 ```{r}
 lm_disparos <- lm(total_shots~., data = train)
 summary(lm_disparos)
 ```
+
+\
+
+**TOTAL DISPAROS BLOQUEADOS**
 
 ```{r}
 lm_disparos_bloqueados <- lm(total_blocked_shots~., data = train)
 summary(lm_disparos_bloqueados)
 ```
 
+\
+
+**TOTAL CORNERS **
+
 ```{r}
 lm_corners <- lm(total_corners~., data = train)
 summary(lm_corners)
 ```
+
+\
+
+**TOTAL CENTROS **
 
 ```{r}
 lm_centros <- lm(total_throw_ins~., data = train)
 summary(lm_centros)
 ```
 
+\
+
+**TOTAL DUELOS AEREOS GANADOS **
+
 ```{r}
 lm_d_aereos <- lm(total_aerials_won~., data = train)
 summary(lm_d_aereos)
 ```
+
+\
+
+**TOTAL DESPEJES **
 
 ```{r}
 lm_despejes <- lm(total_clearances~., data = train)
 summary(lm_despejes)
 ```
 
+\
+
+**TOTAL FALTAS **
+
 ```{r}
 lm_faltas <- lm(total_fouls~., data = train)
 summary(lm_faltas)
 ```
 
+\
+
+**TOTAL TARJETAS AMARILLAS **
+
 ```{r}
 lm_amarillas <- lm(total_yellow_cards~., data = train)
 summary(lm_amarillas)
 ```
+
+\
+
+**TOTAL TARJETAS ROJAS **
 
 ```{r}
 lm_rojas <- lm(total_red_cards~., data = train)
@@ -1326,6 +1386,11 @@ summary(lm_rojas)
 
 ## REGRESION BACKWARD STEPWISE
 
+```{r}
+
+```
+
+
 \
 
 ## REGRESION FORWARD STEPWISE
@@ -1333,17 +1398,20 @@ summary(lm_rojas)
 \
 \
 
-# CONCLUSIONES
-Hay muchas variables que no afectan al resultado de un partido.\
-Los equipos locales ganan más.\
 
-Hay dos equipos que sobresalen (Madrid y Barsa)\
-Hay un grupo de equipos "buenos" (nunca han descendido, meten más goles...)
+
+# CONCLUSIONES
+
+-   Hay muchas variables que no afectan al resultado de un partido.\
+-   Los equipos locales ganan más.\
+-   Hay dos equipos que sobresalen (Madrid y Barsa)\
+-   Hay un grupo de equipos "buenos" (nunca han descendido, meten más goles...)\
 
 De cara al futuro:\
-Cuanto se parecen dos partidos?\
-Clusterizar equipos en buenos, medios y malos.\
-Incluir las rachas de victorias, dorrotas y empates.\
-Calcular los puntos que suma cada equipo por partido en función de ser local o visitante, del "nivel" del rival, etc.\
-Predecir el número de goles que va a marcar cada equipo en un partido, en vez de victoria/derrota/empate.
+
+-   Cuanto se parecen dos partidos?\
+-   Clusterizar equipos en buenos, medios y malos.\
+-   Incluir las rachas de victorias, dorrotas y empates.\
+-   Calcular los puntos que suma cada equipo por partido en función de ser local o visitante, del "nivel" del rival, etc.\
+-   Predecir el número de goles que va a marcar cada equipo en un partido, en vez de victoria/derrota/empate.\
 
