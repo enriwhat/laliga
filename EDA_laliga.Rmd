@@ -821,6 +821,8 @@ qqplot(train$`Home_Team_Possession_%`, qnorm(ppoints(length(train$`Home_Team_Pos
 
 # Análisis multivariante
 
+Una vez analizadas todas las variables de forma individual, vamos a buscar las relaciones que hay entre ellas en los siguientes gráficos.
+
 ```{r}
 num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "Away_Team_Goals_Scored", "Away_Team_Possession_%", "Away_Team_Pass_Success_%", "Away_Team_Total_Shots", "Away_Team_On_Target_Shots", "Away_Team_Off_Target_Shots", "Away_Team_Blocked_Shots", "Away_Team_Corners", "Away_Team_Throw_Ins", "Away_Team_Aerials_Won", "Away_Team_Clearances", "Away_Team_Fouls", "Away_Team_Yellow_Cards", "Away_Team_Second_Yellow_Cards", "Away_Team_Red_Cards")
 
