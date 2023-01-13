@@ -195,6 +195,8 @@ Sin embargo en este caso solo aparecen en las siguientes variables numéricas:
   
 Siendo tan pocos respecto al tamaño del dataset y comprendiendo que es preferible mantener estas filas (ya que los campos aparentemente más relevantes como los goles o los equipos sí aparecen), se ha optado por sustituir estos NA por el número entero más cercano a la media calculada con el resto de valores de esa variable, ya qe todas están expresadas en enteros.
 
+Sabiendo que la imputación de datos faltantes con medidas de centralidad (como es la media que hemos utilizado) está desaconsejada porque tiene a introducir sesgo en los estimadores, en nuestro caso se ha considerado que, dado el escaso número de NA, no compensaba utilizar un método de imputación más complejo, como una regresión.
+
 ```{r}
 laliga$`Home_Team_Possession_%`[is.na(laliga$`Home_Team_Possession_%`)] <- round(mean(laliga$`Home_Team_Possession_%`[!is.na(laliga$`Home_Team_Possession_%`)]), 0)
 
@@ -300,23 +302,23 @@ round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2) %
 ```
 
 \
-También se muestra la visualización de estos datos para una comprensión más intuitiva:
+También se muestra la visualización de estos datos para una comprensión mas intuitiva:
 
 ```{r}
-ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local(victoria = 1)")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
-ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo visitante(victoria = 2)")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Es interesante ver, como tras este análisis de las variables cualitativas ya se pueden identificar los equipos punteros de la liga.
+Es interesante ver como, tras este análisis de las variables cualitativas ya se pueden identificar los equipos punteros de la liga.
 
-No sólo hay 11 equipos que se han mantenido en primera todos los años (Athletic, Atlético, Barcelona, Celta, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) sino que algunos de ellos cosechan una mayor proporción de victorias.
+No sólo hay 11 equipos que se han mantenido en primera todos los años (Athletic, Atlético, Barcelona, Celta, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) si no que algunos de ellos cosechan una mayor proporción de victorias.
 
-En este grupo destacan sobre el resto los tres "grandes" de la actualidad (Real Madrid, Barcelona y Atlético), ya que, aunque en partidos como local hay algún equipo (Sevilla) que se les acerca en victorias, es en los partidos como visitante donde estos tres destacan por encima del resto (especialmente Madrid y Barcelona).
+En este grupo destacan sobre el resto los tres "grandes" de la actualidad (Real Madrid, Barcelona y Atlético), ya que aunque en partidos como local hay alguno equipo (como el Sevilla) que se les acerca en victorias, es en los partidos como visitante donde estos tres destacan por encima del resto (especialmente Madrid y Barcelona).
 
-Esto tiene especial relevancia si comparamos estos datos con los del inicio, en los que se veía que jugar en casa era un factor determinante para ganar un partido.
+Lo cual tiene especial relevancia si comparamos estos datos con los del inicio, en los que se veía que jugar en casa era un factor determinante para ganar un partido.
 
 Por lo tanto, un buen indicio para saber cómo de bueno es un equipo es ver su proporción de victorias como visitante.
 
@@ -371,7 +373,7 @@ boxplot(train$`Home_Team_Pass_Success_%`, train$`Away_Team_Pass_Success_%`, main
 axis(1, at = 1:2, labels = c("Local", "Visitante"))
 ```
 
-En términos de posesión y porcentaje de pases acertados (dos variables lógicamente relacionadas), se observa como ambas distribuciones son prácticamente calcadas, con valores ligeramente más altos para el equipo local pero sin diferencias significativas.
+En términos de posesión y porcentaje de pases acertados (dos variables lógicamente relacionadas), se observa como ambas distribuciones son prácticamente calcadas, con valores ligeramente más altos para el equipo local peri sin diferencias significativas.
 
 ```{r}
 # Tiros
@@ -644,7 +646,7 @@ axis(1, at = 1:2, labels = c("Local", "Visitante"))
 
 Respecto a las faltas, pese a tener una distribución muy similar, incluso el equipo visitante con una media por partido inferior, es este último el que más tarjetas recibe. Probablemente se deba (recordando que el equipo local crea más acciones en campo contrario) a que dichas faltas cortan jugadas potencialmente más peligrosas.
 
-Aunque seguramente influirán otros factores más difíciles de medir, como la presión que ejerza el público local sobre el árbitro a la hora de tomar decisiones.
+Aunque seguramente influirán otros factores más difíciles de medir como la presión que ejerza el público local sobre el árbitro a la hora de tomar decisiones.
 
 ```{r}
 # Goles
@@ -673,7 +675,7 @@ axis(1, at = 1:2, labels = c("Local", "Visitante"))
 
 Por último se observa que los equipos locales marcan más goles que los visitantes, algo relativamente previsible sabiendo que las victorias suelen caer del lado local.
 
-Para finalizar el análisis univariante a continuación se muestran los histogramas con su curva de densidad de cada una de las variables, donde se aprecia como siguen una distribución normal.
+Para finalizar el análisis univariante a continuación se muestran los histogramas con su curva de densidad de cada una de las variables, donde se aprecia a simple vista en casi todas como siguen una distribución normal.
 
 ```{r}
 plot_grid(ggplot(train, aes(`Home_Team_Possession_%`)) +
@@ -795,31 +797,47 @@ plot_grid(ggplot(train, aes(Home_Team_Fouls)) +
         align = "h", nrow = 2, ncol = 4)
 ```
 
+Sin embargo en el caso de los goles no parece tan evidente que la distribución sea normal (más bien parece una exponencial). Para comprobarlo recurrimos a un gráfico Q-Q Plot.
+
+```{r}
+# QQPlot para comprobar su normalidad
+qqplot(train$Home_Team_Goals_Scored, qnorm(ppoints(length(train$Home_Team_Goals_Scored))))
+```
+
+Como sospechábamos la función no es normal (debería salir aproximadamente una recta en el gráfico Q-Q Plot).
+
+A continuación se muestra, comparándola con una exponencial, como en este caso sí se asemeja más.
+
+```{r}
+# QQPlot para comprobar si es exponencial
+qqplot(train$Home_Team_Goals_Scored, qexp(ppoints(length(train$Home_Team_Goals_Scored))))
+```
+
+El resto de variables sí se distribuyen de forma normal, como se ve, por ejemplo, en el Q-Q Plot de la posesión (por elegir alguno):
+
+```{r}
+qqplot(train$`Home_Team_Possession_%`, qnorm(ppoints(length(train$`Home_Team_Possession_%`))))
+```
+
 # Análisis multivariante
 
 ```{r}
-train <- mutate(train, goals = Home_Team_Goals_Scored + Away_Team_Goals_Scored)
-train <- mutate(train, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
-train <- mutate(train, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
-train <- mutate(train, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
-train <- mutate(train, total_blocked_shots = Home_Team_Blocked_Shots + Away_Team_Blocked_Shots)
-train <- mutate(train, total_corners = Home_Team_Corners + Away_Team_Corners)
-train <- mutate(train, total_throw_ins = Home_Team_Throw_Ins + Away_Team_Throw_Ins)
-train <- mutate(train, total_pass_success = `Home_Team_Pass_Success_%` + `Away_Team_Pass_Success_%`)
-train <- mutate(train, total_aerials_won = Home_Team_Aerials_Won + Away_Team_Aerials_Won)
-train <- mutate(train, total_clearances = Home_Team_Clearances + Away_Team_Clearances)
-train <- mutate(train, total_fouls = Home_Team_Fouls + Away_Team_Fouls)
-train <- mutate(train, total_yellow_cards = Home_Team_Yellow_Cards + Away_Team_Yellow_Cards)
-train <- mutate(train, total_second_yellow_cards = Home_Team_Second_Yellow_Cards + Away_Team_Second_Yellow_Cards)
-train <- mutate(train, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_Cards)
+num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "Away_Team_Goals_Scored", "Away_Team_Possession_%", "Away_Team_Pass_Success_%", "Away_Team_Total_Shots", "Away_Team_On_Target_Shots", "Away_Team_Off_Target_Shots", "Away_Team_Blocked_Shots", "Away_Team_Corners", "Away_Team_Throw_Ins", "Away_Team_Aerials_Won", "Away_Team_Clearances", "Away_Team_Fouls", "Away_Team_Yellow_Cards", "Away_Team_Second_Yellow_Cards", "Away_Team_Red_Cards")
 
+ggcorrplot(cor(num_data),type = "lower", lab=FALSE)
 ```
-
 
 ```{r}
-ggplot(train, aes(goals)) + geom_bar() +
-  facet_wrap(~ jornada)
+num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards")
+
+ggcorrplot(cor(num_data),type = "lower", lab=TRUE)
 ```
+
+```{r}
+train %>% select("score", "jornada", "year", "Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots") %>%  
+  ggpairs(aes(color = score, alpha = .5))
+```
+
 
 
 # Modelo de regresión lineal multiple
@@ -842,4 +860,20 @@ ggplot(train, aes(goals)) + geom_bar() +
 
 
 
+```{r}
+train <- mutate(train, goals = Home_Team_Goals_Scored + Away_Team_Goals_Scored)
+train <- mutate(train, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
+train <- mutate(train, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
+train <- mutate(train, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
+train <- mutate(train, total_blocked_shots = Home_Team_Blocked_Shots + Away_Team_Blocked_Shots)
+train <- mutate(train, total_corners = Home_Team_Corners + Away_Team_Corners)
+train <- mutate(train, total_throw_ins = Home_Team_Throw_Ins + Away_Team_Throw_Ins)
+train <- mutate(train, total_pass_success = `Home_Team_Pass_Success_%` + `Away_Team_Pass_Success_%`)
+train <- mutate(train, total_aerials_won = Home_Team_Aerials_Won + Away_Team_Aerials_Won)
+train <- mutate(train, total_clearances = Home_Team_Clearances + Away_Team_Clearances)
+train <- mutate(train, total_fouls = Home_Team_Fouls + Away_Team_Fouls)
+train <- mutate(train, total_yellow_cards = Home_Team_Yellow_Cards + Away_Team_Yellow_Cards)
+train <- mutate(train, total_second_yellow_cards = Home_Team_Second_Yellow_Cards + Away_Team_Second_Yellow_Cards)
+train <- mutate(train, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_Cards)
 
+```
