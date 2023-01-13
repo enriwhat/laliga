@@ -658,8 +658,8 @@ bind_rows(data.frame(summarise(train,
                                min = min(Away_Team_Goals_Scored),
                                mean = mean(Away_Team_Goals_Scored),
                                sd = sd(Away_Team_Goals_Scored)))
-          ) %>% mutate("Tarjetas rojas" = c("Local", "Visitante")) %>% 
-  select("Tarjetas rojas", everything()) %>%
+          ) %>% mutate("Goles" = c("Local", "Visitante")) %>% 
+  select("Goles", everything()) %>%
   kbl() %>%
   kable_material(c("striped", "hover"))
 ```
@@ -671,7 +671,129 @@ boxplot(train$Home_Team_Goals_Scored, train$Away_Team_Goals_Scored, main = 'Gole
 axis(1, at = 1:2, labels = c("Local", "Visitante"))
 ```
 
-Para finalizar se observa que los equipos locales marcan más goles que los visitantes, algo relativamente previsible sabiendo que las victorias suelen caer del lado local.
+Por último se observa que los equipos locales marcan más goles que los visitantes, algo relativamente previsible sabiendo que las victorias suelen caer del lado local.
+
+Para finalizar el análisis univariante a continuación se muestran los histogramas con su curva de densidad de cada una de las variables, donde se aprecia como siguen una distribución normal.
+
+```{r}
+plot_grid(ggplot(train, aes(`Home_Team_Possession_%`)) +
+  geom_histogram(aes(y=..density..), bins = 20,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Posesión (%)", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(`Away_Team_Possession_%`)) +
+  geom_histogram(aes(y=..density..), bins = 20,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Posesión (%)", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(`Home_Team_Pass_Success_%`)) +
+  geom_histogram(aes(y=..density..), bins = 20, position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Pases acertados (%)", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(`Away_Team_Pass_Success_%`)) +
+  geom_histogram(aes(y=..density..), bins = 20,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Pases acertados (%)", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+          
+        align = "h", ncol = 2, nrow = 2)
+```
+
+```{r}
+plot_grid(ggplot(train, aes(Home_Team_Total_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Total_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_On_Target_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10, position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros a puerta", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_On_Target_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros a puerta", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Off_Target_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros fuera", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Off_Target_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros fuera", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Blocked_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros bloqueados", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Blocked_Shots)) +
+  geom_histogram(aes(y=..density..), bins = 10,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tiros bloqueados", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+          
+        align = "h", nrow = 2, ncol = 4)
+```
+
+```{r}
+plot_grid(ggplot(train, aes(Home_Team_Corners)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Corners", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Corners)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Corners", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Throw_Ins)) +
+  geom_histogram(aes(y=..density..), bins = 15, position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Centros", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Throw_Ins)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Centros", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Aerials_Won)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Balones aéreos ganados", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Aerials_Won)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Balones aaéreos ganados", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Clearances)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Despejes", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Clearances)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Despejes", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+          
+        align = "h", nrow = 2, ncol = 4)
+```
+
+```{r}
+plot_grid(ggplot(train, aes(Home_Team_Fouls)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Faltas", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Fouls)) +
+  geom_histogram(aes(y=..density..), bins = 15,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Faltas", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Yellow_Cards)) +
+  geom_histogram(aes(y=..density..), bins = 5, position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tarjetas amarillas", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Yellow_Cards)) +
+  geom_histogram(aes(y=..density..), bins = 5,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Tarjetas amarillas", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_Goals_Scored)) +
+  geom_histogram(aes(), bins = 10,position = "dodge", color = 'black', fill = '#d55566') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Goles", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_Goals_Scored)) +
+  geom_histogram(aes(), bins = 10,position = "dodge", color = 'black', fill = '#066699') +
+  geom_density(alpha=.3, fill = "lightgreen") + labs(x="Goles", y="Frecuencia") + theme(plot.title=element_text(hjust = 0.5)),
+          
+        align = "h", nrow = 2, ncol = 4)
+```
 
 # Análisis multivariante
 
