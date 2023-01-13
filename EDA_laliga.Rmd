@@ -4,6 +4,7 @@ author: "Enrique Roa, Miguel Ocon, Sergio fernández"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
   html_document:
+    code_folding: hide
     theme: flatly
     number_sections: yes
     toc: yes
@@ -13,7 +14,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-	echo = FALSE,
+	echo = TRUE,
 	include = TRUE,
 	warning = TRUE,
 	message = FALSE,
