@@ -1,0 +1,723 @@
+---
+title: "definitivo"
+author: "Enrique Roa, Miguel Ocon, Sergio fernández"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	include = TRUE,
+	warning = TRUE,
+	message = FALSE,
+	fig.align = "center",
+	fig.height=10,
+	fig.width=15,
+	out.width = "90%"
+)
+```
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/LaLiga_logo_%28stacked%29.svg/426px-LaLiga_logo_%28stacked%29.svg.png)
+
+# Introducción y definición de objetivos
+
+El análisis de datos en el deporte es un área que lleva varios años en auge, hasta el punto de que en algunos casos como el fútbol americano o el baseball ha adquirido tal relevancia que tiene influencia directa en el desarrollo de los partidos.
+
+El mundo del fútbol, sin embargo, parece algo reacio a incorporar esta forma de trabajo en su día a día, aunque en los últimos años ya están apareciendo empresas especializadas, como es el caso de *Olocip*, que empiezan a ofrecer soluciones reales para temas que antes pasaban desapercibidos.
+
+Para adentrarnos un poco en este terreno hemos seleccionado un dataset ([kaggle - La Liga Match Data](https://www.kaggle.com/datasets/sanjeetsinghnaik/la-liga-match-data/code)) con datos de todos los partidos de la primera división española que acabarcan 6 temporadas (de 2014 a 2020).
+
+Nuestro primer propósito será analizar los datos en profundidad para ver cómo se distribuyen los diferentes eventos en un partido de fútbol, para posteriormente determinar cuáles son aquellos que tienen mayor influencia en el resultado final.
+
+En ultim instancia, tras conocer aquellas variables que influyen en mayor medida en la victoria de un equipo, se intentará comprobar si es posible predecir el desenlace de un partido futuro.
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(readr)
+library(ggplot2)
+library(cowplot)
+library(GGally)
+library(kableExtra)
+library(plotrix)
+library(ggcorrplot)
+```
+
+# Análisis exploratorio inicial
+
+## Lectura y preparación de los datos
+
+En esta primera etapa cargamos el dataset descargado y hacemos una observación superficial de las variables recogidas y sus características. Se representan también las 10 filas iniciales (primera jornada).
+
+```{r}
+laliga <- read_csv("combined_data_laliga.csv")
+```
+
+```{r}
+head(laliga, 10) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+```{r}
+summary(laliga) 
+```
+
+```{r include = FALSE}
+str(laliga) 
+```
+
+El dataset contiene **2660 observaciones** (correspondientes a un partido cada una) y **40 variables** (de las cuales son **4 cualitativas** y **36 cuantitativas** discretas). Las mayoría de estas variables cuantitativas (34) son acciones del partido correspondientes a cada equipo (local y visitante). 
+
+Respecto a los datos faltantes (NA), el dataset original no tenía ninguno. Sin embargo se han introducido algunos de forma aleatoria para su posterior tratamiento.
+
+A continuación, la descripción de cada una de las variables:
+
+**Home Team**: Equipo local\
+**Away Team**: Equipo visitante\
+**Score**: Resultado (ejemplo: 2-1)\
+**Half Time Score**: Resultado al descanso (ejemplo: 1-1)\
+**Match Excitement**: Emoción del partido (subjetiva)\
+**Home Team Rating**: Valoración del local (subjetiva)\
+**Away Team Rating**: Valoración del visitante (subjetiva)\
+**Home Team Possession**: Posesión local\
+**Away Team Possession**: Posesión visitante\
+**Home Team off Target Shots**: Tiros fuera local\
+**Home Team on Target Shots**: Tiros a puerta local\
+**Home Team Total Shots**: Total tiros local\
+**Home Team Blocked Shots**: Tiros bloqueados local\
+**Home Team Corners**: Corners local\
+**Home Team Throw Ins**: Centros local\
+**Home Team Pass Success**: Pases exitosos local\
+**Home Team Aerials Won**: Balones aereos ganados local\
+**Home Team Clearances**: Despejes local\
+**Home Team Fouls**: Faltas local\
+**Home Team Yellow Cards**: Amarillas local\
+**Home Team Second Yellow Cards**: Segundas amarillas local\
+**Home Team Red Cards**: Rojas local\
+**Away Team off Target Shots**: Tiros fuera visitante\
+**Away Team on Target Shots**: Tiros a puerta visitante\
+**Away Team Total Shots**: Total tiros visitante\
+**Away Team Blocked Shots**: Tiros bloqueados visitante\
+**Away Team Corners**: Corners visitante\
+**Away Team Throw Ins**: Centros visitante\
+**Away Team Pass Success**: Pases exitosos visitante\
+**Away Team Aerials Won**: Balones aereos ganados visitante\
+**Away Team Clearances**: Despejes visitante\
+**Away Team Fouls**: Faltas visitante\
+**Away Team Yellow Cards**: Amarillas visitante\
+**Away Team Second Yellow Cards**: Segundas amarillas visitante\
+**Away Team Red Cards**: Rojas visitante\
+**Home Team Goals Scored**: Goles local\
+**Away Team Goals Scored**: Goles visitante\
+**Home Team Goals Conceeded**: Goles visitante\
+**Away Team Goals Conceeded**: Goles local\
+**Year**: Año\
+
+Tras esta primera visualización, se hará una limpieza del dataset:
+
+  - En primer lugar renombraremos todas las variables para eliminar los espacios (que entorpecen su tratamiento), sustituyéndolos por guiones bajos.
+
+  - Las variables **Match excitement**, **Home Team Rating** y **Away Team Rating** serán eliminadas, ya que corresponden a valoraciones subjetivas que no nos interesa analizar.
+  
+  - Tanto **Home Team Goals Conceeded** como **Away Team Goals Conceeded** son redundantes, ya que ya están recogidas en las columnas de goles anotados por cada equipo, por lo que también las eliminamos.
+  
+  - Por otra parte, la variable **Score** (en formato texto) la transformaremos en una variable categórica con los resultados a modo de quinieral (1,X,2). El resultado al descanso **Half Time Score** también será eliminado, ya que nuestro objetivo será predecir resultado antes del comienzo del partido, no a mitad de este.
+  
+  - Las variables que definen los equipos del partido (**Home Team** y **Away Team**) se transformarán en variables categóricas para una correcta visualización más adelante.
+  
+  - Por último, de cara a futuros estudios con la posición en liga de cada equipo en el momento del partido, definiremos tres nuevas variables con el número de jornada correspondiente (ya que hemos comprobado que el dataset está ordenado cronológicamente) y los puntos ganados por cada equipo (0, 1 ó 3).
+
+```{r}
+# Limpieza de las columnas quitando los espacios y cambiandolos por guiones
+names(laliga) <- gsub(" ","_", names(laliga))
+```
+
+```{r}
+# Limpieza de variables que no nos interesan
+laliga$Score <-  NULL
+laliga$`Half_Time_Score` <- NULL
+laliga$`Match_Excitement` <- NULL
+laliga$`Home_Team_Rating` <- NULL
+laliga$`Away_Team_Rating` <- NULL
+laliga$`Home_Team_Goals_Conceeded` <- NULL
+laliga$`Away_Team_Goals_Conceeded` <- NULL
+```
+
+```{r}
+# Creación de campos que se quieren estudiar más adelante
+laliga <- mutate(laliga, score = ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored > 0, "1",
+                                          ifelse(Home_Team_Goals_Scored-Away_Team_Goals_Scored < 0, "2", "x")))
+
+laliga <- mutate(laliga, jornada = ceiling(row_number() / 10)) %>%
+        mutate(jornada = (jornada - 1) %% 38 + 1)
+
+laliga <- mutate(laliga, home_points = case_when(score == 1 ~ 3,
+                                                 score == "x" ~ 1,
+                                                 score == 2 ~ 0))
+laliga <- mutate(laliga, away_points = case_when(score == 1 ~ 0,
+                                                 score == "x" ~ 1,
+                                                 score == 2 ~ 3))
+```
+
+```{r}
+# Convertimos a categorías
+laliga$Home_Team <- as.factor(laliga$Home_Team)
+laliga$Away_Team <- as.factor(laliga$Away_Team)
+laliga$score <- factor(laliga$score, levels = c("1", "x", "2"))
+```
+
+## Tratamiento de datos faltantes
+
+Si alguno de los NA hubiera aparecido en las variables categóricas (equipos y resultados), la elección para su tratamiento hubiera sido acudir a cualquier fuente (google, por ejemplo) en busca del partido concreto para obtenerlas, ya que sabiendo la jornada y la temporada del partido apenas llevaría unos segundos encontrarlas y evitaríamos eliminar estas filas.
+
+Sin embargo en este caso solo aparecen en las siguientes variables numéricas:
+
+  - Home Team Possession (1)
+  - Home Team On Target Shots (1)
+  - Home Team Clearances (1)
+  - Home Team Second Yellow Cards (1)
+  - Away Team Off Target Shots (1)
+  - Away Team Blocked Shots (1)
+  - Away Team Corners (1)
+  - Away Team Throw Ins
+  - Away Team Pass Success (2)
+  - Away Team Aerials Won (1)
+  
+Siendo tan pocos respecto al tamaño del dataset y comprendiendo que es preferible mantener estas filas (ya que los campos aparentemente más relevantes como los goles o los equipos sí aparecen), se ha optado por sustituir estos NA por el número entero más cercano a la media calculada con el resto de valores de esa variable, ya qe todas están expresadas en enteros.
+
+```{r}
+laliga$`Home_Team_Possession_%`[is.na(laliga$`Home_Team_Possession_%`)] <- round(mean(laliga$`Home_Team_Possession_%`[!is.na(laliga$`Home_Team_Possession_%`)]), 0)
+
+laliga$Home_Team_On_Target_Shots[is.na(laliga$Home_Team_On_Target_Shots)] <- round(mean(laliga$Home_Team_On_Target_Shots[!is.na(laliga$Home_Team_On_Target_Shots)]), 0)
+
+laliga$Home_Team_Clearances[is.na(laliga$Home_Team_Clearances)] <- round(mean(laliga$Home_Team_Clearances[!is.na(laliga$Home_Team_Clearances)]), 0)
+
+laliga$Home_Team_Second_Yellow_Cards[is.na(laliga$Home_Team_Second_Yellow_Cards)] <- round(mean(laliga$Home_Team_Second_Yellow_Cards[!is.na(laliga$Home_Team_Second_Yellow_Cards)]), 0)
+
+laliga$Away_Team_Off_Target_Shots[is.na(laliga$Away_Team_Off_Target_Shots)] <- round(mean(laliga$Away_Team_Off_Target_Shots[!is.na(laliga$Away_Team_Off_Target_Shots)]), 0)
+
+laliga$Away_Team_Blocked_Shots[is.na(laliga$Away_Team_Blocked_Shots)] <- round(mean(laliga$Away_Team_Blocked_Shots[!is.na(laliga$Away_Team_Blocked_Shots)]), 0)
+
+laliga$Away_Team_Corners[is.na(laliga$Away_Team_Corners)] <- round(mean(laliga$Away_Team_Corners[!is.na(laliga$Away_Team_Corners)]), 0)
+
+laliga$Away_Team_Throw_Ins[is.na(laliga$Away_Team_Throw_Ins)] <- round(mean(laliga$Away_Team_Throw_Ins[!is.na(laliga$Away_Team_Throw_Ins)]), 0)
+
+laliga$`Away_Team_Pass_Success_%`[is.na(laliga$`Away_Team_Pass_Success_%`)] <- round(mean(laliga$`Away_Team_Pass_Success_%`[!is.na(laliga$`Away_Team_Pass_Success_%`)]), 0)
+
+laliga$Away_Team_Aerials_Won[is.na(laliga$Away_Team_Aerials_Won)] <- round(mean(laliga$Away_Team_Aerials_Won[!is.na(laliga$Away_Team_Aerials_Won)]), 0)
+```
+
+## División del dataset
+
+Para finalizar la preparación de los datos, dividiremos nuestro dataset en dos partes, una de entrenamiento (train), con el que trabajaremos durante todo el análisis, y otra de validación (test), que nos servirá para comprobar la eficacia del modelo final. Para esta división nos ha parecido apropiado separar las dos últimas temporadas (aproximadamente el 30% del total), en caso de que observáramos alguna tendencia dependiente del tiempo que pudiera ayudar en la predicción del modelo.
+
+```{r}
+test <- filter(laliga, year > 2018)
+train <- filter(laliga, year <= 2018)
+```
+
+# Análisis de las variables cualitativas
+
+Una vez preparado el dataset comenzamos con el análisis de las variables cualitativas. En nuestro caso solo tenemos tres de este tipo (equipo local, equipo visitante y resultado) y empezaremos por las dos primeras:
+
+```{r}
+# Sacamos los partidos que ha jugado cada equipo (más años en primera division)
+data.frame(Equipo = rownames(table(train$Home_Team) + table(train$Away_Team)),
+           Partidos = as.numeric(table(train$Home_Team) + table(train$Away_Team))) %>%
+  arrange(desc(Partidos)) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+```{r}
+ggplot(train, aes(Home_Team)) +
+  geom_bar(fill = "darkgreen") +
+  coord_flip() +
+  labs(x = "Equipo", y = "Partidos", title = "Partidos jugados como local") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Tanto en el análisis numérico como en la gráfica podemos observar que hay algunos equipos que han jugado todos los partidos posibles, mientras que otros no, lo cual nos indica aquellos que han estado al menos una temporada en segunda división.
+
+Respecto a los resultados, se puede ver a continuación cómo el equipo local gana prácticamente la mitad de los partidos (46.42%), por un 28.95% de victorias visitantes y un 24.63% de empates.
+
+```{r}
+# Número y proporción de victorias, derrotas y empates
+table(train$score)
+round(prop.table(table(train$score))*100, 2)
+```
+
+```{r}
+ggplot(train, aes(score, fill = score)) +
+  geom_bar() +
+  labs(x = "Resultado", y = "Partidos", title = "Nº de victorias locales, empates y victorias visitantes") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Tras haber analizado ambas variables por separado, a continuación se hará de forma conjunta, mostrando la cantidad y la proporción de partidos que cada equipo gana, empate y pierde dependiendo de si es local o visitante (en ese orden).
+
+```{r}
+# Partidos ganados, empatados y perdidos por cada equipo como local
+with(train, table(Home_Team, score)) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+```{r}
+# Partidos ganados, empatados y perdidos por cada equipo como visitante
+with(train, table(Away_Team, score)) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+```{r}
+# Proporción de partidos ganados, empatados y perdidos por cada equipo como local
+round(t((prop.table(with(train, table(score, Home_Team)), margin = 2)))*100,2) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+```{r}
+# Proporción de partidos ganados, empatados y perdidos por cada equipo como visitante
+round(t((prop.table(with(train, table(score, Away_Team)), margin = 2)))*100,2) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover")) %>%
+  scroll_box(width = "100%", height = "350px")
+```
+
+\
+También se muestra la visualización de estos datos para una comprensión mas intuitiva:
+
+```{r}
+ggplot(train, aes(x = Home_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+ggplot(train, aes(x = Away_Team, color = score, fill = score)) + geom_bar() + facet_wrap(~score) + coord_flip() + labs(x = "Equipo", y = "Partidos", title = "Nº de victorias, empates y derrotas como equipo local")+ theme(plot.title = element_text(hjust = 0.5))
+```
+
+Es interesante ver como, tras este análisis de las variables cualitativas ya se pueden identificar los equipos punteros de la liga.
+
+No sólo hay 11 equipos que se han mantenido en primera todos los años (Athletic, Atlético, Barcelona, Celta, Eibar, Espanyol, Real Madrid, Real Sociedad, Sevilla, Valencia y Villarreal) si no que algunos de ellos cosechan una mayor proporción de victorias.
+
+En este grupo destacan sobre el resto los tres "grandes" de la actualidad (Real Madrid, Barcelona y Atlético), ya que aunque en partidos como local hay alguno equipo (como el Sevilla) que se les acerca en victorias, es en los partidos como visitante donde estos tres destacan por encima del resto (especialmente Madrid y Barcelona).
+
+Lo cual tiene especial relevancia si comparamos estos datos con los del inicio, en los que se veía que jugar en casa era un factor determinante para ganar un partido.
+
+Por lo tanto, un buen indicio para saber cómo de bueno es un equipo es ver su proporción de victorias como visitante.
+
+# Análisis de las variables cuantitativas
+
+En el caso de las variables cuantitativas tenemos una gran cantidad de ellas para analizar, así que para un mejor entendimiento de las mismas se analizarán agrupándolas por eventos similares en el partido y comparándolas entre equipo local y visitante, tanto numérica como visualmente con gráficos de cajas.
+
+```{r}
+# Posesion
+bind_rows(data.frame(summarise(train,
+                               max = max(`Home_Team_Possession_%`),
+                               min = min(`Home_Team_Possession_%`),
+                               mean = mean(`Home_Team_Possession_%`),
+                               sd = sd(`Home_Team_Possession_%`))),
+          data.frame(summarise(train,
+                               max = max(`Away_Team_Possession_%`),
+                               min = min(`Away_Team_Possession_%`),
+                               mean = mean(`Away_Team_Possession_%`),
+                               sd = sd(`Away_Team_Possession_%`)))
+          ) %>% mutate("Posesión (%)" = c("Local", "Visitante")) %>% 
+  select("Posesión (%)", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Pases
+bind_rows(data.frame(summarise(train,
+                               max = max(`Home_Team_Pass_Success_%`),
+                               min = min(`Home_Team_Pass_Success_%`),
+                               mean = mean(`Home_Team_Pass_Success_%`),
+                               sd = sd(`Home_Team_Pass_Success_%`))),
+          data.frame(summarise(train,
+                               max = max(`Away_Team_Pass_Success_%`),
+                               min = min(`Away_Team_Pass_Success_%`),
+                               mean = mean(`Away_Team_Pass_Success_%`),
+                               sd = sd(`Away_Team_Pass_Success_%`)))
+          ) %>% mutate("Pases acertados (%)" = c("Local", "Visitante")) %>% 
+  select("Pases acertados (%)", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(train$`Home_Team_Possession_%`, train$`Away_Team_Possession_%`, main = 'Posesión (%)',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$`Home_Team_Pass_Success_%`, train$`Away_Team_Pass_Success_%`, main = 'Pases acertados (%)',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+```
+
+En términos de posesión y porcentaje de pases acertados (dos variables lógicamente relacionadas), se observa como ambas distribuciones son prácticamente calcadas, con valores ligeramente más altos para el equipo local peri sin diferencias significativas.
+
+```{r}
+# Tiros
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Total_Shots),
+                               min = min(Home_Team_Total_Shots),
+                               mean = mean(Home_Team_Total_Shots),
+                               sd = sd(Home_Team_Total_Shots))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Total_Shots),
+                               min = min(Away_Team_Total_Shots),
+                               mean = mean(Away_Team_Total_Shots),
+                               sd = sd(Away_Team_Total_Shots)))
+          ) %>% mutate("Tiros" = c("Local", "Visitante")) %>% 
+  select("Tiros", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Tiros a puerta
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_On_Target_Shots),
+                               min = min(Home_Team_On_Target_Shots),
+                               mean = mean(Home_Team_On_Target_Shots),
+                               sd = sd(Home_Team_On_Target_Shots))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_On_Target_Shots),
+                               min = min(Away_Team_On_Target_Shots),
+                               mean = mean(Away_Team_On_Target_Shots),
+                               sd = sd(Away_Team_On_Target_Shots)))
+          ) %>% mutate("Tiros a puerta" = c("Local", "Visitante")) %>% 
+  select("Tiros a puerta", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Tiros fuera
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Off_Target_Shots),
+                               min = min(Home_Team_Off_Target_Shots),
+                               mean = mean(Home_Team_Off_Target_Shots),
+                               sd = sd(Home_Team_Off_Target_Shots))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Off_Target_Shots),
+                               min = min(Away_Team_Off_Target_Shots),
+                               mean = mean(Away_Team_Off_Target_Shots),
+                               sd = sd(Away_Team_Off_Target_Shots)))
+          ) %>% mutate("Tiros fuera" = c("Local", "Visitante")) %>% 
+  select("Tiros fuera", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Tiros bloqueados
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Blocked_Shots),
+                               min = min(Home_Team_Blocked_Shots),
+                               mean = mean(Home_Team_Blocked_Shots),
+                               sd = sd(Home_Team_Blocked_Shots))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Blocked_Shots),
+                               min = min(Away_Team_Blocked_Shots),
+                               mean = mean(Away_Team_Blocked_Shots),
+                               sd = sd(Away_Team_Blocked_Shots)))
+          ) %>% mutate("Tiros bloqueados" = c("Local", "Visitante")) %>% 
+  select("Tiros bloqueados", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+par(mfrow = c(1, 4))
+boxplot(train$Home_Team_Total_Shots, train$Away_Team_Total_Shots, main = 'Tiros',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_On_Target_Shots, train$Away_Team_On_Target_Shots, main = 'Tiros a puerta',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Off_Target_Shots, train$Away_Team_Off_Target_Shots, main = 'Tiros fuera',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Blocked_Shots, train$Away_Team_Blocked_Shots, main = 'Tiros bloqueados',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+```
+
+En el apartado de tiros vemos como el equipo local sí es dominador en todas las facetas. Y aunque las diferencias no son enormes, sí que parecen suficientes para marcar diferencias (como así lo hacen en el marcador).
+
+```{r}
+# Corners
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Corners),
+                               min = min(Home_Team_Corners),
+                               mean = mean(Home_Team_Corners),
+                               sd = sd(Home_Team_Corners))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Corners),
+                               min = min(Away_Team_Corners),
+                               mean = mean(Away_Team_Corners),
+                               sd = sd(Away_Team_Corners)))
+          ) %>% mutate("Corners" = c("Local", "Visitante")) %>% 
+  select("Corners", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Centros
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Throw_Ins),
+                               min = min(Home_Team_Throw_Ins),
+                               mean = mean(Home_Team_Throw_Ins),
+                               sd = sd(Home_Team_Throw_Ins))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Throw_Ins),
+                               min = min(Away_Team_Throw_Ins),
+                               mean = mean(Away_Team_Throw_Ins),
+                               sd = sd(Away_Team_Throw_Ins)))
+          ) %>% mutate("Centros" = c("Local", "Visitante")) %>% 
+  select("Centros", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Balones aereos
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Aerials_Won),
+                               min = min(Home_Team_Aerials_Won),
+                               mean = mean(Home_Team_Aerials_Won),
+                               sd = sd(Home_Team_Aerials_Won))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Aerials_Won),
+                               min = min(Away_Team_Aerials_Won),
+                               mean = mean(Away_Team_Aerials_Won),
+                               sd = sd(Away_Team_Aerials_Won)))
+          ) %>% mutate("Balones aereos ganados" = c("Local", "Visitante")) %>% 
+  select("Balones aereos ganados", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Despejes
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Clearances),
+                               min = min(Home_Team_Clearances),
+                               mean = mean(Home_Team_Clearances),
+                               sd = sd(Home_Team_Clearances))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Clearances),
+                               min = min(Away_Team_Clearances),
+                               mean = mean(Away_Team_Clearances),
+                               sd = sd(Away_Team_Clearances)))
+          ) %>% mutate("Despejes" = c("Local", "Visitante")) %>% 
+  select("Despejes", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+par(mfrow = c(1, 4))
+boxplot(train$Home_Team_Corners, train$Away_Team_Corners, main = 'Corners',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Throw_Ins, train$Away_Team_Throw_Ins, main = 'Centros',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Aerials_Won, train$Away_Team_Aerials_Won, main = 'Balones aéreos ganados',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Clearances, train$Away_Team_Clearances, main = 'Despejes',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+```
+
+Al igual que con los tiros, el equipo local domina también los centros y corners, lo cual quiere decir que tiene mayor presencia en área contraria. Esto encaja con el hecho de que sea el equipo visitante el que más balones despeje.
+
+```{r}
+# Faltas
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Fouls),
+                               min = min(Home_Team_Fouls),
+                               mean = mean(Home_Team_Fouls),
+                               sd = sd(Home_Team_Fouls))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Fouls),
+                               min = min(Away_Team_Fouls),
+                               mean = mean(Away_Team_Fouls),
+                               sd = sd(Away_Team_Fouls)))
+          ) %>% mutate("Faltas" = c("Local", "Visitante")) %>% 
+  select("Faltas", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Amarillas
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Yellow_Cards),
+                               min = min(Home_Team_Yellow_Cards),
+                               mean = mean(Home_Team_Yellow_Cards),
+                               sd = sd(Home_Team_Yellow_Cards))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Yellow_Cards),
+                               min = min(Away_Team_Yellow_Cards),
+                               mean = mean(Away_Team_Yellow_Cards),
+                               sd = sd(Away_Team_Yellow_Cards)))
+          ) %>% mutate("Tarjetas amarillas" = c("Local", "Visitante")) %>% 
+  select("Tarjetas amarillas", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Segundas amarillas
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Second_Yellow_Cards),
+                               min = min(Home_Team_Second_Yellow_Cards),
+                               mean = mean(Home_Team_Second_Yellow_Cards),
+                               sd = sd(Home_Team_Second_Yellow_Cards))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Second_Yellow_Cards),
+                               min = min(Away_Team_Second_Yellow_Cards),
+                               mean = mean(Away_Team_Second_Yellow_Cards),
+                               sd = sd(Away_Team_Second_Yellow_Cards)))
+          ) %>% mutate("Segundas tarjetas amarillas" = c("Local", "Visitante")) %>% 
+  select("Segundas tarjetas amarillas", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+# Rojas
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Red_Cards),
+                               min = min(Home_Team_Red_Cards),
+                               mean = mean(Home_Team_Red_Cards),
+                               sd = sd(Home_Team_Red_Cards))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Red_Cards),
+                               min = min(Away_Team_Red_Cards),
+                               mean = mean(Away_Team_Red_Cards),
+                               sd = sd(Away_Team_Red_Cards)))
+          ) %>% mutate("Tarjetas rojas" = c("Local", "Visitante")) %>% 
+  select("Tarjetas rojas", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(train$Home_Team_Fouls, train$Away_Team_Fouls, main = 'Faltas',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+
+boxplot(train$Home_Team_Yellow_Cards, train$Away_Team_Yellow_Cards, main = 'Tarjetas amarillas',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+```
+
+Respecto a las faltas, pese a tener una distribución muy similar, incluso el equipo visitante con una media por partido inferior, es este último el que más tarjetas recibe. Probablemente se deba (recordando que el equipo local crea más acciones en campo contrario) a que dichas faltas cortan jugadas potencialmente más peligrosas.
+
+Aunque seguramente influirán otros factores más difíciles de medir como la presión que ejerza el público local sobre el árbitro a la hora de tomar decisiones.
+
+```{r}
+# Goles
+bind_rows(data.frame(summarise(train,
+                               max = max(Home_Team_Goals_Scored),
+                               min = min(Home_Team_Goals_Scored),
+                               mean = mean(Home_Team_Goals_Scored),
+                               sd = sd(Home_Team_Goals_Scored))),
+          data.frame(summarise(train,
+                               max = max(Away_Team_Goals_Scored),
+                               min = min(Away_Team_Goals_Scored),
+                               mean = mean(Away_Team_Goals_Scored),
+                               sd = sd(Away_Team_Goals_Scored)))
+          ) %>% mutate("Tarjetas rojas" = c("Local", "Visitante")) %>% 
+  select("Tarjetas rojas", everything()) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(train$Home_Team_Goals_Scored, train$Away_Team_Goals_Scored, main = 'Goles',
+        ylab = "Valores", col = c("#d55566","#066699"))
+axis(1, at = 1:2, labels = c("Local", "Visitante"))
+```
+
+Para finalizar se observa que los equipos locales marcan más goles que los visitantes, algo relativamente previsible sabiendo que las victorias suelen caer del lado local.
+
+# Análisis multivariante
+
+```{r}
+train <- mutate(train, goals = Home_Team_Goals_Scored + Away_Team_Goals_Scored)
+train <- mutate(train, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
+train <- mutate(train, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
+train <- mutate(train, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
+train <- mutate(train, total_blocked_shots = Home_Team_Blocked_Shots + Away_Team_Blocked_Shots)
+train <- mutate(train, total_corners = Home_Team_Corners + Away_Team_Corners)
+train <- mutate(train, total_throw_ins = Home_Team_Throw_Ins + Away_Team_Throw_Ins)
+train <- mutate(train, total_pass_success = `Home_Team_Pass_Success_%` + `Away_Team_Pass_Success_%`)
+train <- mutate(train, total_aerials_won = Home_Team_Aerials_Won + Away_Team_Aerials_Won)
+train <- mutate(train, total_clearances = Home_Team_Clearances + Away_Team_Clearances)
+train <- mutate(train, total_fouls = Home_Team_Fouls + Away_Team_Fouls)
+train <- mutate(train, total_yellow_cards = Home_Team_Yellow_Cards + Away_Team_Yellow_Cards)
+train <- mutate(train, total_second_yellow_cards = Home_Team_Second_Yellow_Cards + Away_Team_Second_Yellow_Cards)
+train <- mutate(train, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_Cards)
+
+```
+
+
+```{r}
+ggplot(train, aes(goals)) + geom_bar() +
+  facet_wrap(~ jornada)
+```
+
+
+# Modelo de regresión lineal multiple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
