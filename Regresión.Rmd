@@ -142,7 +142,7 @@ summary(reg_pl)
 Procedemos a hacer lo mismo contra las variables que nos aparecen correladas en este caso Sepal Length.
 
 ```{r}
-reg_pl_2 <- lm(Petal.Length ~ Sepal.Length, data = iris)
+reg_pl_2 <- lm(Petal.Length ~ Sepal.Length, data = d_train)
 summary(reg_pl_2)
 ```
 
@@ -150,7 +150,7 @@ Vemos que podemos construir el modelo con la siguiente ecuación:
 
 Petal.Length =−7.10144+1.85843(Sepal.Length)
 
-R cuadrado es 0.76 indica que el 76% de la variabilidad en la longitud del pétalo puede ser explicada por la variabilidad en la longitud del sépalo. Vemos que la asociación entre la longitud del pétalo y la longitud del sépalo es estadísticamente significantiva por su p valor.
+R cuadrado es 0.76 indica que el 76% de la variabilidad en la longitud del pétalo puede ser explicada por la variabilidad en la longitud del sépalo. 
 
 \
 
@@ -161,7 +161,7 @@ Vamos a tratar de verificar silos residuos siguen una distribución normal
 \
 
 ```{r}
-plot(reg_pl_2$residuals ~ iris$Petal.Length, xlab = "L. Pétalo", ylab = "Residuals")
+plot(reg_pl_2$residuals ~ d_train$Petal.Length, xlab = "L. Pétalo", ylab = "Residuals")
 abline(h = 0, col = "red", lwd = 2, lty = 2)
 ```
 
@@ -190,5 +190,67 @@ mforward <- leaps::regsubsets(Petal.Length~. , data = d_train, method="forward")
 plot(mforward)
 ```
 
+\
+
+# BACKTESTING
+
+\
+
+Ahora analizamos test y usamos el modelo.
+
+```{r}
+summary(d_test)
+```
+
+\
+
+```{r}
+pairs(d_test)
+```
+
+\
+
+```{r}
+cor(d_test[,1:4])
+```
+
+
+\
+
+```{r}
+n_data <- d_test [,1:4]
+ggcorrplot(cor(n_data))
+```
+
+\
+
+```{r}
+mean(d_test$Petal.Length)
+sd(d_test$Petal.Length)
+var(d_test$Petal.Length)
+```
+
+\
+
+## CROSS VALIDATION
+
+Hacemos validación cruzada, partimos el dataset en 4 partes y probamos el modelo.
+
+```{r}
+cross_control <- trainControl(method="cv",number=4,verboseIter = TRUE)
+```
+
+\
+
+```{r}
+reg_pl_3 <- train(Petal.Length ~ Sepal.Length, data = d_train, method="lm",trControl=cross_control)
+reg_pl_3
+```
+
+```{r}
+summary(reg_pl_3)
+```
+
+Comparando vemos que ambos modelos son parecidos.
 
 
