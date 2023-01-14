@@ -1,5 +1,5 @@
 ---
-title: "definitivo"
+title: "EDA La Liga"
 author: "Enrique Roa, Miguel Ocon, Sergio fernández"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(
 	echo = TRUE,
 	include = TRUE,
-	warning = TRUE,
+	warning = FALSE,
 	message = FALSE,
 	fig.align = "center",
 	fig.height=10,
@@ -35,7 +35,7 @@ El mundo del fútbol, sin embargo, parece algo reacio a incorporar esta forma de
 
 Para adentrarnos un poco en este terreno hemos seleccionado un dataset ([kaggle - La Liga Match Data](https://www.kaggle.com/datasets/sanjeetsinghnaik/la-liga-match-data/code)) con datos de todos los partidos de la primera división española que acabarcan 6 temporadas (de 2014 a 2020).
 
-Nuestro primer propósito será analizar los datos en profundidad para ver cómo se distribuyen los diferentes eventos en un partido de fútbol, para posteriormente determinar cuáles son aquellos que tienen mayor influencia en el resultado final.
+Nuestro primer propósito será analizar los datos en profundidad para ver cómo se distribuyen los diferentes eventos en un partido de fútbol, comprenderlos y visualizarlos, para posteriormente determinar cuáles son aquellos que tienen mayor influencia en el resultado final.
 
 En ultima instancia, tras conocer aquellas variables que influyen en mayor medida en la victoria de un equipo, se intentará comprobar si es posible predecir el desenlace de un partido futuro.
 
@@ -50,6 +50,7 @@ library(GGally)
 library(kableExtra)
 library(plotrix)
 library(ggcorrplot)
+library(bestNormalize)
 ```
 
 # Análisis exploratorio inicial
@@ -168,6 +169,8 @@ laliga <- mutate(laliga, home_points = case_when(score == 1 ~ 3,
 laliga <- mutate(laliga, away_points = case_when(score == 1 ~ 0,
                                                  score == "x" ~ 1,
                                                  score == 2 ~ 3))
+
+laliga <- mutate(laliga, goals = Home_Team_Goals_Scored + Away_Team_Goals_Scored)
 ```
 
 ```{r}
@@ -193,6 +196,14 @@ Sin embargo en este caso solo aparecen en las siguientes variables numéricas:
   - Away Team Throw Ins
   - Away Team Pass Success (2)
   - Away Team Aerials Won (1)
+  
+```{r}
+library(VIM)
+aggr(laliga, col=c('lightgreen','black'), numbers=TRUE, sortVars=TRUE,
+                  labels=names(laliga), cex.axis=.7, gap=3, 
+                  ylab=c("Histogram of missing data","Pattern"))
+```
+  
   
 Siendo tan pocos respecto al tamaño del dataset y comprendiendo que es preferible mantener estas filas (ya que los campos aparentemente más relevantes como los goles o los equipos sí aparecen), se ha optado por sustituir estos NA por la mediana del resto de valores de esa variable.
 
@@ -222,7 +233,7 @@ laliga$Away_Team_Aerials_Won[is.na(laliga$Away_Team_Aerials_Won)] <- round(mean(
 
 ## División del dataset
 
-Para finalizar la preparación de los datos, dividiremos nuestro dataset en dos partes, una de entrenamiento (train), con el que trabajaremos durante todo el análisis, y otra de validación (test), que nos servirá para comprobar la eficacia del modelo final. Para esta división nos ha parecido apropiado separar las dos últimas temporadas (aproximadamente el 30% del total), en caso de que observáramos alguna tendencia dependiente del tiempo que pudiera ayudar en la predicción del modelo.
+Para finalizar la preparación de los datos, dividiremos nuestro dataset en dos partes, una de entrenamiento (train), con el que trabajaremos durante todo el análisis, y otra de validación (test), que nos servirá para comprobar la eficacia del modelo final. Para esta división se han parecido separado las dos últimas temporadas (aproximadamente el 30% del total).
 
 ```{r}
 test <- filter(laliga, year > 2018)
@@ -806,11 +817,13 @@ plot_grid(ggplot(train, aes(Home_Team_Fouls)) +
         align = "h", nrow = 2, ncol = 4)
 ```
 
-Sin embargo en el caso de los goles y las expulsiones no parece tan evidente que la distribución sea normal (más bien parecen exponenciales). Para comprobarlo recurrimos a un gráfico Q-Q Plot.
+Sin embargo en el caso de los goles y las expulsiones no parece tan evidente que la distribución sea normal (más bien parecen exponenciales).
 
 # Análisis multivariante
 
-Una vez analizadas todas las variables de forma individual, vamos a buscar las relaciones que hay entre ellas en los siguientes gráficos.
+Una vez analizadas todas las variables de forma individual, resulta evidente cuales debemos escoger como variables respuesta: los goles y el resultado son aquellas de mayor interés para el desenlace de un partido, aunque seguramente las más complejas de predecir.
+
+A continuación se realizará un análisis multivariante, donde cruzaremos todas para ver las relaciones que hay entre ellas. Debido a la gran cantidad de posibles gráficos entre todas ellas, solo hemos seleccionado los que consideramos más representativos o que nos sirven para mostrar la variedad de casos.
 
 ```{r}
 num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "Away_Team_Goals_Scored", "Away_Team_Possession_%", "Away_Team_Pass_Success_%", "Away_Team_Total_Shots", "Away_Team_On_Target_Shots", "Away_Team_Off_Target_Shots", "Away_Team_Blocked_Shots", "Away_Team_Corners", "Away_Team_Throw_Ins", "Away_Team_Aerials_Won", "Away_Team_Clearances", "Away_Team_Fouls", "Away_Team_Yellow_Cards", "Away_Team_Second_Yellow_Cards", "Away_Team_Red_Cards")
@@ -824,14 +837,93 @@ num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%",
 ggcorrplot(cor(num_data),type = "lower", lab=TRUE)
 ```
 
+Además de la obvia relación directa entre la posesión de ambos equipos, lo que más llama la atención (aunque también era esperable), es la correlación entre los distintos tiros (totales, a puerta, fuera...).
+
+```{r}
+plot_grid(ggplot(train, aes(x=Home_Team_Total_Shots, y=Home_Team_On_Target_Shots)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Tiros", y="Tiros a puerta") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=Home_Team_Total_Shots, y=Home_Team_On_Target_Shots)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Tiros", y="Tiros fuera") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=Home_Team_Total_Shots, y=Home_Team_Blocked_Shots)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Tiros", y="Tiros bloqueados") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=Home_Team_Total_Shots, y=Home_Team_Corners)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Tiros", y="Corners") +
+  geom_smooth(method=lm)
+) 
+```
+
+Ya que no merece la pena representar todos los pares de relaciones ya que serían muchísimos y encima poco representativos, simplemente expondremos otros cuatro sin apenas relación entre ellos (como la mayoría de variables).
+
+```{r}
+plot_grid(ggplot(train, aes(x=`Home_Team_Possession_%`, y=Home_Team_Off_Target_Shots)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Posesión", y="Tiros fuera") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=`Home_Team_Possession_%`, y=Home_Team_Throw_Ins)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Posesión", y="Centros") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=`Home_Team_Possession_%`, y=Home_Team_Aerials_Won)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Posesión", y="Balones aéreos gandos") +
+  geom_smooth(method=lm),
+  
+  ggplot(train, aes(x=`Home_Team_Possession_%`, y=Home_Team_Corners)) +
+  geom_point(color = '#d55566', fill = '#d55566') +
+  labs(x="Posesión", y="Corners") +
+  geom_smooth(method=lm)
+)
+```
+
+Por último vamos a intentar encontrar alguna relación entre los aspectos que parecen más relevantes o que nos puedan dar alguna información adicional que hayamos pasado por alto.
+
 ```{r}
 train %>% select("score", "jornada", "year", "Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots") %>%  
   ggpairs(aes(color = score, alpha = .5))
 ```
 
+Ahondando un poco más en las variables goles y resultado, que son nuestro objetivo, podemos cruzarlas y obtener alguna relación más.
+
+```{r}
+ggplot(train,aes(score ,goals, fill = score)) + geom_bar(position = "dodge", stat = "summary", fun = "mean") + labs(title="Media de goles por partido", x="resultado", y="goles") + theme(plot.title=element_text(hjust = 0.5))
+```
+
+Como esta en la que los partidos con más goles son los que acaban decantándose en victoria para uno de los dos equipos, mientras que los empates suelen ser a pocos goles.
+
+Un apartado que no habíamos abordado hasta ahora son las series temporales. Teniendo los años de cada partido y el número de jornada podemos sacar algún gráfico interesante.
+
+```{r}
+ggplot(train, aes(Home_Team_Goals_Scored)) + geom_bar(fill ="#d55566") +
+  facet_wrap(~ year, nrow = 1) + labs(x = "temporada", y = "Goles", title = "Nº de goles por temporada")
+```
+
+```{r}
+ggplot(train, aes(Home_Team_Goals_Scored)) + geom_bar(fill ="#d55566") +
+  facet_wrap(~ jornada, nrow = 7) + labs(x = "jornada", y = "Goles", title = "Nº de goles por jornada")
+```
+ 
+```{r}
+goles_year_jorn <- data_frame(train %>% group_by(year, jornada) %>% summarise( total_goles = sum(goals)))
+ggplot(goles_year_jorn,  aes(x = jornada, y = total_goles)) + geom_point() + facet_grid(~year) + labs(x = "jornadas", y = "Nº de goles", title = "Nº de goles por jornada / Año") + theme(plot.title = element_text(hjust = 0.5)) + xlim(1,38)
+```
+
+Mientras que el número de goles parece no variar mucho por temporada, sí que se aprecia cierta tendencia en el transcurso de las jornadas, siendo los inicios de liga con resultados menos abultados y dejando para las últimas jornadas (cuando los equipos suelen jugar a tumba abierta en busca de resultados) los partidos más abultados.
+  
 # Transformación de variables
 
-Como se ha observado en la parte de visualización, la gran mayoría de las variables numéricas se distribuyen como una normal. Además todas se encuentran en una escala similar de valores, por lo que transformarlas no tendría mucho sentido.
+Como se ha observado en la parte de visualización, la gran mayoría de las variables numéricas se distribuyen como una normal. Además todas se encuentran en una escala similar de valores, por lo que transformarlas no tendría mucho sentido para compararlas.
 
 Para comprobar que estas variables son efectivamente normales antes de descartar su transformación, haremos uso de gráficos Q-Q Plot. A continuación se muestra esta verificación solo para una de ellas (posesión), ya que el resto son demostraciones análogas que solo recargarían el informe innecesariamente.
 
@@ -841,21 +933,17 @@ qqplot(train$`Home_Team_Possession_%`, qnorm(ppoints(length(train$`Home_Team_Pos
 
 Se ve como el gráfico se asemeja con bastante exactitud a una recta, por lo que confirma nuestra hipótesis de que la distribución es normal.
 
-En cambio, si realizamos el mismo test para los goles, el resultado no es tan claro:
+En cambio, si realizamos el mismo test para los goles, el resultado no es tan claro (gráfico izquierdo), incluso se parece más a una exponencial (gráfico derecho):
 
 ```{r}
-# QQPlot para comprobar su normalidad
+par(mfrow = c(1, 2))
+# qqplot normal
 qqplot(train$Home_Team_Goals_Scored, qnorm(ppoints(length(train$Home_Team_Goals_Scored))))
-```
-
-Incluso se compara mejor a una exponencial, como se ve en el Q-Q Plot inferior:
-
-```{r}
-# QQPlot para comprobar si es exponencial
+# qqplot exponencial
 qqplot(train$Home_Team_Goals_Scored, qexp(ppoints(length(train$Home_Team_Goals_Scored))))
 ```
 
-Para el caso de las variables relacionadas con las expulsiones (tarjetas rojas y dobles amarillas), al tener tan pocos valores (no es habitual que haya más de una expulsión en un equipo), se ha optado por binalizarlas (expulsión/es o no expulsión/es).
+Para el caso de las variables relacionadas con las expulsiones (tarjetas rojas y dobles amarillas), al tener tan pocos valores (no es habitual que haya más de una expulsión en un equipo), se ha optado por binalizarlas (expulsiones o no expulsiones).
 
 ```{r}
 train <- mutate(train, Home_Team_expulsion = ifelse(Home_Team_Red_Cards+Home_Team_Second_Yellow_Cards == 0, "No", "Yes"))
@@ -868,62 +956,73 @@ train$Home_Team_RedCards <- NULL
 train$Away_Team_Red_Cards <- NULL
 ```
 
-Una vez hecho podemos visualizar para comprobar que efectivamente, son poco habituales las expulsiones en un partido, aunque ligeramente mayor en el equipo visitante.
+Una vez hecho podemos visualizar para comprobar que efectivamente, son poco habituales las expulsiones en un partido, aunque ligeramente mayor en el equipo visitante. También se comprueba como se decanta la balanza a favor del equipo que no ha tenido expulsados.
 
 ```{r}
 plot_grid(ggplot(train, aes(Home_Team_expulsion)) +
   geom_bar(fill = "#d55566") +
   labs(x = "Expulsiones", y = "Partidos", title = "Nº de expulsiones") +
   theme(plot.title = element_text(hjust = 0.5)),
-
-ggplot(train, aes(Away_Team_expulsion)) +
+  
+  ggplot(train, aes(Away_Team_expulsion)) +
   geom_bar(fill = "#066699") +
   labs(x = "Expulsiones", y = "Partidos", title = "Nº de expulsiones") +
+  theme(plot.title = element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Home_Team_expulsion, fill = score)) +
+  geom_bar() +
+  labs(x = "Expulsiones", y = "Partidos", title = "expulsiones locales") +
+  theme(plot.title = element_text(hjust = 0.5)),
+  
+  ggplot(train, aes(Away_Team_expulsion, fill = score)) +
+  geom_bar() +
+  labs(x = "Expulsiones", y = "Partidos", title = "Expulsiones visitantes") +
   theme(plot.title = element_text(hjust = 0.5))
 )
 ```
 
+Podríamos plantearnos transformar la variables de los goles, pero a continuación se muestra que no hemos encontrado una transformación apropiada.
+
+Con la función *bestNormalize* se ha buscado la mejor transformación:
+
 ```{r}
-ggplot(train, aes(expulsion, fill = score)) +
-  geom_bar() +
-  labs(x = "Expulsiones", y = "Partidos", title = "Nº de expulsiones") +
-  theme(plot.title = element_text(hjust = 0.5))
+set.seed(11)
+Goals_Norm <- bestNormalize(train$Home_Team_Goals_Scored, allow_lambert_s = TRUE)
+Goals_Norm
 ```
+
+```{r}
+plot(Goals_Norm)
+```
+
+En la que la mejor candidata es la transformación logarítmica. Sin embargo para este caso decidimos no utilizarla, ya que transformaría en 0 todos los 1 (nñumero de goles más habitual) y dificultaría mucho la interpretación de los resultados.
+
+De cara al futuro sería interesante plantear el cambio de la variable resultado a dicotómica (gana el local / no gana el local, por ejemplo) para facilitar su predicción en futuros modelos.
+
+# Conclusiones preliminares
+
+Tras haber analizado en detalle todas las variables de este dataset tanto de forma individual como cruzada, se han comprobado de manera empírica muchos de los conocimientos populares sobre este deporte.
+
+Es cierto que si bien a nosotros, como aficionados al fútbol, ninguno de los hallazgos nos han sido especialmente reveladores, este parece un dataset bastante completo para entender de forma superficial e intuitiva este deporte y algunos de sus mecanismos.
+
+Habla bastante de la complejidad de un deporte así el hecho de que de las decenas de estadísticas que se recogen en los partidos, se haga tan difícil relacionar algunas de ellas con el resultado o el ganador.
+
+Seguramente en deportes con más puntaje (como puede ser el baloncesto) sea más fácil predecir quien va a ganar un partido, ya que en resultados tan abultados un fallo o un acierto no decanta tanto la balanza. Sin embargo en el fútbol puedes estar dominando en todos los aspectos del juego y cometer un pequeño error que te haga encajar un gol y perder el partido, sin que ello se refleje en los datos (al menos en las estadísticas recogidas en este dataset).
+
+Llegar a conclusiones como que jugar de local es un factor muy importante o que equipos como Madrid y Barcelona son dominantes sobre el resto no ha sido ninguna sorpresa, pero nos ha servido para familiarizarnos con las herramientas necesarias para realizar un análisis exploratorio de datos como son las librerías de visualización o los test de normalidad, que era parte del objetivo.
 
 # Modelo de regresión lineal
 
+La parte más frustrante sin duda ha sido la creación de un modelo predictivo. Intuíamos la dificultad que podía haber, dados los datos que teníamos, pero tras varios intentes no hemos sido capaces de obtener un modelo minimamente válido. Ni para los goles, que era una de las opciones, ni para el resultado (ganador local, visitante o empate).
 
+Un resultado en parte lógico, ya que predecir los eventos de un partido de fútbol es un negocio millonario que (de momento) parece fuera de nuestro alcance.
 
+De cara al futuro y como posibles vías para seguir trabajando este dataset, se podría trbajar sobre las siguientes ideas:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-train <- mutate(train, goals = Home_Team_Goals_Scored + Away_Team_Goals_Scored)
-train <- mutate(train, total_off_target_shots = Home_Team_Off_Target_Shots + Away_Team_Off_Target_Shots)
-train <- mutate(train, total_on_target_shots = Home_Team_On_Target_Shots + Away_Team_On_Target_Shots)
-train <- mutate(train, total_shots = Home_Team_Total_Shots + Away_Team_Total_Shots)
-train <- mutate(train, total_blocked_shots = Home_Team_Blocked_Shots + Away_Team_Blocked_Shots)
-train <- mutate(train, total_corners = Home_Team_Corners + Away_Team_Corners)
-train <- mutate(train, total_throw_ins = Home_Team_Throw_Ins + Away_Team_Throw_Ins)
-train <- mutate(train, total_pass_success = `Home_Team_Pass_Success_%` + `Away_Team_Pass_Success_%`)
-train <- mutate(train, total_aerials_won = Home_Team_Aerials_Won + Away_Team_Aerials_Won)
-train <- mutate(train, total_clearances = Home_Team_Clearances + Away_Team_Clearances)
-train <- mutate(train, total_fouls = Home_Team_Fouls + Away_Team_Fouls)
-train <- mutate(train, total_yellow_cards = Home_Team_Yellow_Cards + Away_Team_Yellow_Cards)
-train <- mutate(train, total_second_yellow_cards = Home_Team_Second_Yellow_Cards + Away_Team_Second_Yellow_Cards)
-train <- mutate(train, total_red_cards = Home_Team_Red_Cards + Away_Team_Red_Cards)
-
-```
+  - *Clusterizar* a todos los equipos en varios grupos (buenos, medios y malos, por ejemplo), para poder dar un peso mayor a aquellos que sean superiores a su rival.
+  
+  - Comprobar el comportamiento de cada equipo como local y visitante, ya que hay algunos que pese a tener resultados "mediocres" de media, en su estadio suelen hacerse fuertes.
+  
+  - A partir del numero de jornada y resultado se podría calcular la posición de cada equipo en la tabla a la hora de jugar un partido, así como la "urgencia" que tenga o no de ganar (si está luchando por la liga o por no descender en las últimas jornadas, por ejemplo). También la racha en la que lleva cada equipo al partido.
+  
+  - Definir cuánto se parecen dos partido en función de todo lo anterior y compararlo con partidos similares.
