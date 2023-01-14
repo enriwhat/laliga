@@ -1,0 +1,194 @@
+---
+title: "REGRESIÓN"
+author: "Sergio Fernández, Miquel Ocón, Enrique Roa"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	include = TRUE,
+	warning = FALSE,
+	message = FALSE,
+	fig.align = "center",
+	fig.height=10,
+	fig.width=15,
+	out.width = "90%"
+)
+```
+
+\
+
+# REGRESIÓN DEL DATASET IRIS
+
+\
+
+La regresión lineal es un método estadístico para predecir la relación entre una variable dependiente (la que se quiere predecir) y una o más variables independientes que se usan para hacer la predicción.
+
+## OBJETIVO
+
+El objetivo es realizar una regresión lineal (método estadístico para predecir la relación entre una variable dependiente con una o más variables independientes) del dataset **IRIS** el cual es es un conjunto de datos de muestra integrado por 150 muestras 50 muestras por tres especies de iris (Iris setosa, Iris virginica y Iris versicolor). Estas características se miden en centímetros y son el ancho y largo del sépalo y del pétalo.
+
+
+## LIBRERIAS
+
+```{r}
+library(caret)
+library(leaps)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(readr)
+library(ggplot2)
+library(cowplot)
+library(GGally)
+library(plotrix)
+library(ggcorrplot)
+```
+
+\
+
+## ANÁLISIS EXPLORATORIO INICIAL
+
+\
+
+```{r}
+datos <- data.frame(iris)
+head(datos)
+dim(datos)
+str(datos)
+summary(datos)
+```
+
+\
+
+a primera vista observamos que el dataframe contiene:\
+
+-   150 observaciones
+-   5 variables
+-   1 variables cualitativas (la especie de iris)
+-   4 variables cuantitativas
+-   No hay valores faltantes
+
+
+## DIVISIÓN TRAIN - TEST
+
+Dividimos 70/30 %
+
+```{r}
+set.seed(123)
+part <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
+
+d_train <- iris[part, ]
+d_test <- iris[-part, ]
+```
+
+## EDA
+
+\
+
+### VARIABLES CUALITATIVAS
+
+\
+
+```{r}
+table(d_train$Species)
+```
+
+
+### VARIABLES CUANTITATIVAS
+
+\
+
+Pasamos a observar las variables cuantitativas.
+
+```{r}
+pairs(d_train)
+```
+
+```{r}
+cor(d_train[,1:4])
+```
+
+```{r}
+n_data <- d_train [,1:4]
+ggcorrplot(cor(n_data))
+```
+
+
+```{r}
+mean(d_train$Petal.Length)
+sd(d_train$Petal.Length)
+var(d_train$Petal.Length)
+```
+
+
+## MODELO REGRESIÓN
+
+Utilizamos la longitud del petalo contra todas las otras variables. P valor menor que 0.05, R cuadrado y R cuadrado ajustado superiores al 0.9, modelo muy explicativo.
+
+```{r}
+reg_pl<-lm(Petal.Length~. , data = d_train)
+summary(reg_pl)
+```
+
+Procedemos a hacer lo mismo contra las variables que nos aparecen correladas en este caso Sepal Length.
+
+```{r}
+reg_pl_2 <- lm(Petal.Length ~ Sepal.Length, data = iris)
+summary(reg_pl_2)
+```
+
+Vemos que podemos construir el modelo con la siguiente ecuación: 
+
+Petal.Length =−7.10144+1.85843(Sepal.Length)
+
+R cuadrado es 0.76 indica que el 76% de la variabilidad en la longitud del pétalo puede ser explicada por la variabilidad en la longitud del sépalo. Vemos que la asociación entre la longitud del pétalo y la longitud del sépalo es estadísticamente significantiva por su p valor.
+
+\
+
+VERIFICACION RESIDUOS
+
+Vamos a tratar de verificar silos residuos siguen una distribución normal
+
+\
+
+```{r}
+plot(reg_pl_2$residuals ~ iris$Petal.Length, xlab = "L. Pétalo", ylab = "Residuals")
+abline(h = 0, col = "red", lwd = 2, lty = 2)
+```
+
+\
+
+```{r}
+hist(reg_pl_2$residuals, xlab = "Residuals", ylab = "Freq", main = "")
+boxplot(reg_pl_2$residuals, bty="l", range=2, col="lightblue", horizontal=T,xlab="Residuals")
+```
+
+\
+
+```{r}
+qqnorm(reg_pl_2$residuals, xlab = "Q teóricos", ylab = "Q muestrales")
+qqline(reg_pl_2$residuals, lwd = 2, lty = 2, col = "blue")
+```
+
+\
+
+TECNICA SUPERVISADA FORWARD
+
+\
+
+```{r}
+mforward <- leaps::regsubsets(Petal.Length~. , data = d_train, method="forward")
+plot(mforward)
+```
+
+
+
