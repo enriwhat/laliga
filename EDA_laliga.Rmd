@@ -1003,9 +1003,9 @@ De cara al futuro sería interesante plantear el cambio de la variable resultado
 
 Tras haber analizado en detalle todas las variables de este dataset tanto de forma individual como cruzada, se han comprobado de manera empírica muchos de los conocimientos populares sobre este deporte.
 
-Es cierto que si bien a nosotros, como aficionados al fútbol, ninguno de los hallazgos nos han sido especialmente reveladores, este parece un dataset bastante completo para entender de forma superficial e intuitiva este deporte y algunos de sus mecanismos.
+Es cierto, que si bien para nosotros, como aficionados al fútbol, ninguno de los hallazgos nos han sido especialmente reveladores, este parece un dataset bastante completo para entender de forma superficial e intuitiva este deporte y algunos de sus mecanismos.
 
-Habla bastante de la complejidad de un deporte así el hecho de que de las decenas de estadísticas que se recogen en los partidos, se haga tan difícil relacionar algunas de ellas con el resultado o el ganador.
+Habla bastante de la complejidad de un deporte así, el hecho de que a pesar de  las decenas de estadísticas que se recogen en los partidos, se haga tan difícil relacionar algunas de ellas con el resultado o el ganador.
 
 Seguramente en deportes con más puntaje (como puede ser el baloncesto) sea más fácil predecir quien va a ganar un partido, ya que en resultados tan abultados un fallo o un acierto no decanta tanto la balanza. Sin embargo en el fútbol puedes estar dominando en todos los aspectos del juego y cometer un pequeño error que te haga encajar un gol y perder el partido, sin que ello se refleje en los datos (al menos en las estadísticas recogidas en este dataset).
 
@@ -1023,6 +1023,6 @@ De cara al futuro y como posibles vías para seguir trabajando este dataset, se 
   
   - Comprobar el comportamiento de cada equipo como local y visitante, ya que hay algunos que pese a tener resultados "mediocres" de media, en su estadio suelen hacerse fuertes.
   
-  - A partir del numero de jornada y resultado se podría calcular la posición de cada equipo en la tabla a la hora de jugar un partido, así como la "urgencia" que tenga o no de ganar (si está luchando por la liga o por no descender en las últimas jornadas, por ejemplo). También la racha en la que lleva cada equipo al partido.
+  - A partir del numero de jornada y resultado se podría calcular la posición de cada equipo en la tabla a la hora de jugar un partido, así como la "urgencia" que tenga o no de ganar (si está luchando por la liga o por no descender en las últimas jornadas, por ejemplo). También la racha en la que llega cada equipo al partido.
   
   - Definir cuánto se parecen dos partido en función de todo lo anterior y compararlo con partidos similares.
