@@ -820,41 +820,91 @@ El resto de variables sí se distribuyen de forma normal, como se ve, por ejempl
 qqplot(train$`Home_Team_Possession_%`, qnorm(ppoints(length(train$`Home_Team_Possession_%`))))
 ```
 
+Una vez analizadas todas las variables de forma individual, vamos a buscar las relaciones que hay entre ellas, cruzándolas en los siguientes gráficos y más adelante representando aquellas que más interés tienen.
+
+En nuestro caso, las variables objetivo a las que prestaremos especial atención son el **resultado** y los **goles** de cada equipo, ya que son las que determinan el desenlace de los partidos.
+
 # Análisis multivariante
 
-Una vez analizadas todas las variables de forma individual, vamos a buscar las relaciones que hay entre ellas en los siguientes gráficos.
-
 ```{r}
-num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "Away_Team_Goals_Scored", "Away_Team_Possession_%", "Away_Team_Pass_Success_%", "Away_Team_Total_Shots", "Away_Team_On_Target_Shots", "Away_Team_Off_Target_Shots", "Away_Team_Blocked_Shots", "Away_Team_Corners", "Away_Team_Throw_Ins", "Away_Team_Aerials_Won", "Away_Team_Clearances", "Away_Team_Fouls", "Away_Team_Yellow_Cards", "Away_Team_Second_Yellow_Cards", "Away_Team_Red_Cards")
+num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "Away_Team_Goals_Scored", "Away_Team_Possession_%", "Away_Team_Pass_Success_%", "Away_Team_Total_Shots", "Away_Team_On_Target_Shots", "Away_Team_Off_Target_Shots", "Away_Team_Blocked_Shots", "Away_Team_Corners", "Away_Team_Throw_Ins", "Away_Team_Aerials_Won", "Away_Team_Clearances", "Away_Team_Fouls", "Away_Team_Yellow_Cards", "Away_Team_Second_Yellow_Cards", "Away_Team_Red_Cards", "year")
 
 ggcorrplot(cor(num_data),type = "lower", lab=FALSE)
 ```
 
 ```{r}
-num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards")
+num_data <- train %>% select("Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Pass_Success_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots", "Home_Team_Off_Target_Shots", "Home_Team_Blocked_Shots", "Home_Team_Corners", "Home_Team_Throw_Ins", "Home_Team_Aerials_Won", "Home_Team_Clearances", "Home_Team_Fouls", "Home_Team_Yellow_Cards", "Home_Team_Second_Yellow_Cards", "Home_Team_Red_Cards", "year")
 
 ggcorrplot(cor(num_data),type = "lower", lab=TRUE)
 ```
+
+Además de la obvia correlación directa entre la posesión de uno y otro equipo, podemos ver como también el aumento de la posesión (que va ligado al de pases exitosos), hace generar más ocasiones de ataque (tiros, corners, etc.).
+
+Hay una relación también evidente (y son las más fuertes del dataset) entre los distintos tipos de tiros (cuanto más tiras, más disparas a puerta y también más fuera). También generas más corners.
+
+Como curiosidad llama la atención como con los años, prácticamente las únicas correlaciones reseñables son los centros (que disminuyen en cada temporada) y los pases acertados (que aumentan). Un indicio de la dirección en la que va últimamente este deporte, hacia un fútbol más asociativo y con menos juego por banda.
+
+Por otra parte, los goles (que era la variable que más nos interesaba), solo tiene una relación marcada con los disparos a puerta.
 
 ```{r}
 train %>% select("score", "jornada", "year", "Home_Team_Goals_Scored", "Home_Team_Possession_%", "Home_Team_Total_Shots", "Home_Team_On_Target_Shots") %>%  
   ggpairs(aes(color = score, alpha = .5))
 ```
 
+Nuevamente observamos como la dependencia que más posibilidades tiene de tener relación con los goles, son los tiros a puerta.
 
+A continuación se muestran algunos de los gráficos de barras obtenidos en busca de nuevas relaciones.
+
+```{r}
+plot_grid(ggplot(train,aes(score , Home_Team_Goals_Scored)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = '#066699') + labs(title="Media de goles del equipo local por partido", x="resultado", y="disparos") + theme(plot.title=element_text(hjust = 0.5)),
+         ggplot(train,aes(score , Home_Team_Total_Shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = '#066699') + labs(title="Media de tiros del equipo local por partido", x="resultado", y="disparos") + theme(plot.title=element_text(hjust = 0.5)),
+         ggplot(train,aes(score , Home_Team_On_Target_Shots)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = '#066699') + labs(title="Media de tiros a puerta del equipo local por partido", x="resultado", y="disparos") + theme(plot.title=element_text(hjust = 0.5)),
+         ggplot(train,aes(score , `Home_Team_Possession_%`)) + geom_bar(position = "dodge", stat = "summary", fun = "mean", color = 'black', fill = '#066699') + labs(title="Media de posesion del equipo local por partido", x="resultado", y="disparos") + theme(plot.title=element_text(hjust = 0.5)),
+         align = "h", nrow = 2)
+```
+
+También se han intentado encontrar patrones a lo largo del tiempo analizando tanto las temporadas como las jornadas, pero no ha aparecido nada relevante.
+
+```{r}
+ggplot(train, aes(Home_Team_Goals_Scored)) + geom_bar(fill="#d55566") +
+  facet_wrap(~ year, nrow=1)
+```
+
+```{r}
+ggplot(train, aes(Away_Team_Goals_Scored)) + geom_bar(fill="#066699") +
+  facet_wrap(~ year, nrow=1)
+```
+
+```{r}
+ggplot(train, aes(Home_Team_Goals_Scored)) + geom_bar(fill="#d55566") +
+  facet_wrap(~ jornada, ncol = 8)
+```
+
+# Transformación de variables cuantitativas
+
+```{r}
+train %>% mutate(log10_ppgdp = sqrt(Home_Team_Goals_Scored)) %>%
+  select(log10_ppgdp) %>%
+  na.omit() %>%
+  ggplot(aes(x=log10_ppgdp)) +
+    geom_density()
+```
+
+
+# Procesado de variables cualitativas
 
 # Modelo de regresión lineal multiple
 
+Tras haberle dado muchas vueltas hemos llegado a la conclusión de que para predecir el número de goles de un equipo, tendríamos que definir nuevas variables
+
+
+recodificar variables
 
 
 
 
 
-
-
-
-
-
+# Conclusiones
 
 
 
